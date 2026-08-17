@@ -1,0 +1,7 @@
+# Evidence Vault & Resource Workspace Validation
+
+Desktop visual validation confirms that the Portfolio route is now an **Evidence Vault** with local capture controls, proof status, capability/topic context, optional URL support, filtering, and an explicit policy that a guided session becomes verified evidence only after every stated check is complete. The resource roadmap renders a personal state selector and optional note beneath each canonical resource without changing the curated phase-tier catalog.
+
+The review identified a capture-form layout defect: the proof note was constrained to the label column at desktop width. The field now spans the full capture grid and is reset to one column at the mobile breakpoint. Desktop and 375 px mobile visual reviews confirmed that the capture control has a readable full-width proof field, appropriately stacked mobile controls, and no sidebar or content collision.
+
+Trusted browser validation confirmed the end-to-end policy and recovery path. The session completion control remains disabled and its policy text is visible until every proof check is selected. Completing the session creates a verified `session-proof` evidence record while retaining the original journal entry. Evidence deletion first presents a confirmation, leaves the journal record intact, and exposes an immediate local undo that restores the record. A personal resource state also persisted through the interactive selector. The automated suite passed **52 tests**, and the production build completed with **83 static pages**.

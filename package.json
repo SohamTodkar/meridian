@@ -1,0 +1,36 @@
+{
+  "name": "meridian",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "node server.mjs",
+    "build": "next build",
+    "start": "node server.mjs",
+    "lint": "eslint",
+    "extract": "node scripts/extract-data.cjs",
+    "test": "vitest run --config vitest.config.mts"
+  },
+  "dependencies": {
+    "framer-motion": "13.1.0",
+    "lenis": "^1.3.26",
+    "lucide-react": "1.31.0",
+    "next": "16.3.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "three": "^0.185.1",
+    "zustand": "5.0.15"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "3.3.1",
+    "@tailwindcss/postcss": "4.1.10",
+    "@types/node": "20.19.30",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "@types/three": "^0.185.4",
+    "eslint": "9.22.0",
+    "eslint-config-next": "16.3.0",
+    "tailwindcss": "4.1.10",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
+}
