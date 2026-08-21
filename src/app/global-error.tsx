@@ -1,0 +1,5 @@
+"use client";
+
+export default function GlobalError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  return <html lang="en"><body style={{ margin: 0, background: "#101112", color: "#f3f0e9", fontFamily: "Arial, sans-serif" }}><main style={{ display: "grid", minHeight: "100vh", placeItems: "center", padding: "24px" }}><section style={{ maxWidth: "560px", borderTop: "2px solid #ff5638", paddingTop: "20px" }}><p style={{ color: "#aaa9a3", fontFamily: "monospace", fontSize: "11px", letterSpacing: "0.08em", textTransform: "uppercase" }}>Ideas / system note</p><h1 style={{ margin: "10px 0", fontSize: "clamp(42px, 8vw, 72px)", letterSpacing: "-0.08em", lineHeight: ".9" }}>The signal dropped.</h1><p style={{ color: "#aaa9a3", lineHeight: 1.6 }}>The page did not load as expected. You can retry the request or return to the archive.</p><button type="button" onClick={reset} style={{ border: "1px solid #f3f0e9", background: "#f3f0e9", color: "#101112", marginTop: "14px", padding: "10px 14px", fontWeight: 700 }}>Try again</button></section></main></body></html>;
+}

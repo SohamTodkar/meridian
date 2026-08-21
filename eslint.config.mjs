@@ -1,18 +1,17 @@
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTypescript from "eslint-config-next/typescript";
 
-const eslintConfig = [
+const config = [
   ...nextVitals,
   ...nextTypescript,
   {
     ignores: [
       "node_modules/**",
       ".next/**",
-      "out/**",
-      "build/**",
+      "dist/**",
       "next-env.d.ts",
     ],
   },
 ];
 
-export default eslintConfig;
+export default config;

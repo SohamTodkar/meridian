@@ -1,50 +1,29 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import { AppShellLoader } from "@/components/app-shell-loader";
-import { OfflineRuntime } from "@/components/offline-runtime";
-import { SmoothScrollProvider } from "@/components/smooth-scroll-provider";
-import { PageTransitionCurtain } from "@/components/page-transition-curtain";
-import { EasterEggsAndHud } from "@/components/easter-eggs-and-hud";
+import { LenisProvider } from "@/components/layout/lenis-provider";
+import { PageTransition } from "@/components/layout/page-transition";
+import { RuntimePolish } from "@/components/layout/runtime-polish";
+import { SiteFooter } from "@/components/layout/site-footer";
+import { SiteHeader } from "@/components/layout/site-header";
+import { ScrollProgress } from "@/components/shared/scroll-progress";
 
-const inter = localFont({
-  src: "../fonts/Inter.var.woff2",
-  variable: "--font-inter",
-  display: "swap",
-});
-
-const jetBrains = localFont({
-  src: "../fonts/JetBrainsMono.var.woff2",
-  variable: "--font-mono",
-  display: "swap",
-});
+const geist = localFont({ src: "../fonts/Inter.var.woff2", variable: "--font-geist", display: "swap" });
+const mono = localFont({ src: "../fonts/JetBrainsMono.var.woff2", variable: "--font-mono", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Meridian — learning path",
-  description: "A local-first learning path for Soham.",
+  metadataBase: new URL("https://northstarhq-kuufgfpd.manus.space"),
+  title: { default: "Ideas — field notes for useful unfinished thinking", template: "%s — Ideas" },
+  description: "A personal field journal for systems, interfaces, practice, and small experiments.",
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, title: "Meridian", statusBarStyle: "black" },
-  icons: { icon: "/meridian-icon.svg", apple: "/meridian-icon.svg" },
+  alternates: { types: { "application/rss+xml": "/api/rss" } },
+  icons: { icon: "/ideas-icon.svg", apple: "/ideas-icon.svg" },
+  openGraph: { type: "website", title: "Ideas", description: "Field notes for useful unfinished thinking." },
+  robots: { index: true, follow: true },
 };
 
-export const viewport: Viewport = { themeColor: "#0a0a0a" };
+export const viewport: Viewport = { themeColor: "#101112", colorScheme: "dark light" };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  return (
-    <html lang="en" className={`${inter.variable} ${jetBrains.variable}`}>
-      <body>
-        <SmoothScrollProvider>
-          <PageTransitionCurtain />
-          <EasterEggsAndHud />
-          <AppShellLoader>{children}</AppShellLoader>
-          <OfflineRuntime />
-          <div id="modal-root" />
-        </SmoothScrollProvider>
-      </body>
-    </html>
-  );
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  return <html lang="en" data-theme="dark" className={`${geist.variable} ${mono.variable}`}><body><LenisProvider><a className="skip-link" href="#main-content">Skip to content</a><ScrollProgress /><PageTransition /><RuntimePolish /><SiteHeader /><main id="main-content" tabIndex={-1}>{children}</main><SiteFooter /></LenisProvider></body></html>;
 }

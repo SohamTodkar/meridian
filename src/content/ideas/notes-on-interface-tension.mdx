@@ -1,0 +1,23 @@
+---
+title: Notes on interface tension
+description: Why quiet interfaces still need contrast, pace, and a point of view.
+tags: [Design, Interaction, Visual]
+status: Published
+date: 2026-08-02
+accent: signal
+---
+
+## Calm is not the absence of movement
+
+Interfaces can be quiet and still have a pulse. A change in position or opacity is enough when the content hierarchy is already doing the heavy lifting.
+
+### Make the affordance earn its attention
+
+The important motion answers a question: **where did this go, what changed, and what can I do next?** Decorative movement without an answer spends attention without giving anything back.
+
+<CodeBlock language="ts" code={`const transition = {
+  duration: 0.22,
+  ease: [0.23, 1, 0.32, 1],
+};`} />
+
+<Callout title="Constraint">If an animation needs a long explanation, the interface probably needs a stronger static state.</Callout>

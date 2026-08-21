@@ -1,14 +1,14 @@
 {
-  "name": "Meridian Learning OS",
-  "short_name": "Meridian",
-  "description": "A private, local-first learning workspace for Python, AI, ML, and AI Safety.",
+  "name": "Ideas — field journal",
+  "short_name": "Ideas",
+  "description": "Field notes for useful unfinished thinking.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0a0a0a",
-  "theme_color": "#0a0a0a",
+  "background_color": "#101112",
+  "theme_color": "#101112",
   "icons": [
     {
-      "src": "/meridian-icon.svg",
+      "src": "/ideas-icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"

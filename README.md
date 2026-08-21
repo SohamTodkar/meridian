@@ -1,83 +1,35 @@
-# Meridian
+# Ideas
 
-Meridian is Soham's local-first learning path: one useful action, an honest
-proof, and a record that stays on this device. It combines the source
-curriculum, guided sessions, daily rhythm, weekly review, journal, portfolio,
-library, and safety net in a calmer evidence-driven workflow.
+Ideas is a responsive personal field journal for writing down, filtering, and sharing small experiments in systems, interfaces, practice, product, research, and design.
 
-## Run it on Windows
+The site is a Next.js App Router application with MDX-powered ideas, a lazily loaded React Three Fiber hero, Lenis-aware scroll progress, non-blocking Rive details, Framer Motion card layout, Fuse.js search, Shiki-powered code examples, structured metadata, RSS, an Open Graph endpoint, and accessible keyboard navigation.
 
-The simplest option is to double-click `start.cmd`. It installs dependencies
-if needed, starts Meridian, and opens the app in your browser.
+## Run locally
 
-To run it manually:
+Install the repository-pinned dependencies, then start the development server.
 
-1. Install the current Node.js LTS from [nodejs.org](https://nodejs.org/).
-2. Open **Command Prompt** in the Meridian folder.
-3. Install dependencies:
-
-   ```bat
-   npm install
-   ```
-
-4. Start the development app:
-
-   ```bat
-   npm run dev
-   ```
-
-5. Open <http://localhost:3000>.
-
-Stop the development server with `Ctrl+C`.
-
-## Production build
-
-From Command Prompt in the Meridian folder:
-
-```bat
-npm install
-npm run build
-npm start
+```bash
+pnpm install --frozen-lockfile
+pnpm dev
 ```
 
-Then open <http://localhost:3000>.
+Use `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` to validate the project. `pnpm validate` runs the complete local release check.
 
-## Your data and backups
+## Add an idea
 
-Meridian has no account or server. Progress is stored by your browser on this
-device under the local-storage key `meridian.v1`. Use **Settings → Portable
-state → Export JSON** regularly to save a complete backup somewhere safe.
+Add an `.mdx` file under `src/content/ideas/`. Each document must define this frontmatter:
 
-To restore a Meridian backup, use **Settings → Import JSON** and choose the
-backup file. The import validates the file and reports what was matched and
-skipped.
+```yaml
+title: A clear working title
+description: One sentence describing the idea.
+tags: [Design, Practice]
+status: Exploring
+date: 2026-08-21
+accent: coral
+```
 
-You can also import backups from the two older apps:
+The archive automatically derives search content, filter tags, reading time, detail routes, RSS items, sitemaps, and article metadata from these files.
 
-- In Operations Cockpit, use its **Backup** button to export the
-  `future.cockpit.v1` backup, then import that JSON in Meridian.
-- In Northstar / Guided Learning, use its backup/export function, then import
-  that JSON in Meridian.
+## Design and interaction commitments
 
-Legacy imports are best effort. Meridian maps only fields and registered
-identifiers that correspond; it does not guess unknown data.
-
-## Keyboard shortcuts
-
-- `Ctrl+K` on Windows or `Cmd+K` on macOS: open the command palette
-- `Up` / `Down`: move through palette results
-- `Enter`: open the selected result
-- `Escape`: close the palette
-
-The same shortcuts are listed in **Settings**.
-
-## Offline and privacy
-
-Meridian is local-only: there are no accounts, no application server, and no
-runtime network calls. Curriculum data and both fonts are bundled in this
-folder. Inter, JetBrains Mono, and all application assets load locally, so the
-app continues to work without an internet connection after dependencies have
-been installed.
-
-The only network access involved in setup is `npm install`, which downloads
-packages from npm. Running Meridian itself does not make outbound requests.
+The initial page is kept light: the WebGL scene is dynamically imported, animations are limited to `transform` and `opacity`, images are loaded as texture assets only in the canvas, and reduced-motion settings disable nonessential transitions and Lenis smoothing. Native browser keyboard scrolling, text selection, and find-in-page behavior remain untouched. Press `F1` to toggle the field-mode overlay; the Konami sequence provides a lightweight visual flourish.
