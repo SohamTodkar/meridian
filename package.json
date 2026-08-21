@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "NODE_ENV=development next dev --webpack",
-    "build": "NODE_ENV=production next build --webpack",
+    "build": "NODE_ENV=production next build --webpack && node scripts/write-managed-launcher.mjs",
     "start": "NODE_ENV=production next start",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit --incremental false",
