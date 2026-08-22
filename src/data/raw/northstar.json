@@ -1,0 +1,1693 @@
+{
+  "profile": {
+    "name": "Soham",
+    "goal": "Build durable AI/ML foundations, then explore where careful technical work can be most beneficial."
+  },
+  "modes": {
+    "semester": {
+      "label": "Semester",
+      "minutes": 60,
+      "note": "One focused block on class days; 3–5 sessions per week. University overlap counts."
+    },
+    "exam": {
+      "label": "Exam",
+      "minutes": 20,
+      "note": "Maintenance only. Keep contact with the work; no catching up."
+    },
+    "vacation": {
+      "label": "Vacation",
+      "minutes": 150,
+      "note": "Two focused blocks with a real break. Keep one full rest day."
+    },
+    "flex": {
+      "label": "Flexible",
+      "minutes": 75,
+      "note": "Use the session duration as a guide, not a deadline. Capability gates decide progress."
+    }
+  },
+  "protocol": {
+    "allowed": [
+      "Ask for a concept explanation or analogy",
+      "Ask for questions that reveal the bug",
+      "Request feedback on code you already wrote",
+      "Ask for test cases, then write the solution yourself"
+    ],
+    "avoid": [
+      "Pasting generated code you cannot explain",
+      "Letting autocomplete complete the learning objective",
+      "Reporting AI output as your proof",
+      "Sharing secrets, personal data, or private code"
+    ],
+    "cycle": [
+      "Attempt alone for 20–30 minutes",
+      "Write the exact confusion or error",
+      "Ask for explanation, not a finished answer",
+      "Close the assistant and rebuild from memory",
+      "Verify with tests; note what you learned"
+    ]
+  },
+  "phases": [
+    {
+      "id": "p0",
+      "number": "0",
+      "name": "Python Launchpad",
+      "range": "Typical range: 4–7 weeks",
+      "summary": "Learn to write, debug, test, and ship small Python programs without copying solutions.",
+      "promise": "You can turn a plain-language problem into a tested Python program and explain your choices.",
+      "primary": "CS50P — Introduction to Programming with Python",
+      "priorities": [
+        "Python expressions, control flow, functions and data structures",
+        "Files, exceptions, modules, classes and tests",
+        "Git fundamentals, virtual environments and debugger use",
+        "NumPy and plotting as a bridge to data work"
+      ],
+      "stretch": [
+        "Generators and custom iterators",
+        "A larger automation project",
+        "Extra challenge problems after core proof passes"
+      ],
+      "resources": [
+        {
+          "name": "CS50P",
+          "url": "https://cs50.harvard.edu/python/",
+          "role": "Primary course",
+          "note": "Follow its current weeks and problem sets; if numbering changes, match by topic.",
+          "checked": "Check current course page before starting"
+        },
+        {
+          "name": "Python for Everybody",
+          "url": "https://www.py4e.com/",
+          "role": "Backup — gentler",
+          "note": "Use only if the primary explanation remains unclear after a second attempt.",
+          "checked": "Evergreen; verify lesson links"
+        },
+        {
+          "name": "University of Helsinki Python MOOC",
+          "url": "https://programming-25.mooc.fi/",
+          "role": "Backup — more drills",
+          "note": "Use selected exercises for weak topics, not as a second simultaneous course.",
+          "checked": "Time-sensitive annual edition"
+        },
+        {
+          "name": "Python documentation",
+          "url": "https://docs.python.org/3/",
+          "role": "Reference",
+          "note": "Use tutorial and library pages to practice reading official documentation.",
+          "checked": "Version-sensitive; use your installed Python version"
+        },
+        {
+          "name": "3Blue1Brown — Linear Algebra",
+          "url": "https://www.3blue1brown.com/topics/linear-algebra",
+          "role": "Math intuition",
+          "note": "One video when energy permits; math is parallel, not a gate yet.",
+          "checked": "Evergreen series"
+        }
+      ],
+      "sessions": [
+        {
+          "id": "p0s1",
+          "title": "Tonight: make Python answer you",
+          "min": 45,
+          "outcome": "I can run a Python file, change values, and interpret a simple traceback.",
+          "steps": [
+            "Open a terminal and confirm Python with python --version (try py --version on Windows).",
+            "Create learning_lab and a file named hello.py.",
+            "Print your name, age, and one reason you are learning.",
+            "Add two numeric variables and print a formatted sentence with their sum.",
+            "Intentionally misspell print, run it, and read the final traceback line before fixing it."
+          ],
+          "proof": "A hello.py that runs, plus a note naming the error type you created.",
+          "checks": [
+            "Program runs from the terminal",
+            "I can point to the file and line in a traceback",
+            "I changed the program without a copied solution"
+          ],
+          "stop": "Stop after one clean run and one understood error. Do not install every tool tonight.",
+          "hint": "If python is not found, try the Windows py launcher. If neither works, install current Python from python.org and enable Add Python to PATH."
+        },
+        {
+          "id": "p0s2",
+          "title": "Values, types, and tiny calculations",
+          "min": 60,
+          "outcome": "I can choose basic Python types and inspect how values change.",
+          "steps": [
+            "Complete the matching CS50P variables/functions lesson section.",
+            "Create budget.py with integer, float, string, and boolean values.",
+            "Calculate a weekly learning-time estimate from sessions and minutes.",
+            "Use type() to inspect three values; predict each result first.",
+            "Write two edge cases: zero sessions and fractional hours."
+          ],
+          "proof": "budget.py prints a readable estimate for normal and edge-case inputs.",
+          "checks": [
+            "Names describe their values",
+            "Predictions match type() output",
+            "Zero input does not crash"
+          ],
+          "stop": "Stop when both edge cases run. Formatting polish is optional.",
+          "hint": "Print intermediate values if the final number surprises you."
+        },
+        {
+          "id": "p0s3",
+          "title": "Decisions with conditionals",
+          "min": 65,
+          "outcome": "I can express mutually exclusive decisions with if, elif, and else.",
+          "steps": [
+            "Study conditionals in the primary course.",
+            "Build pace_adviser.py: accept available minutes and exam status.",
+            "Return one calm recommendation: rest, minimum session, or full session.",
+            "Test boundaries such as 0, 20, 59, and 60 minutes.",
+            "Refactor repeated messages into named variables."
+          ],
+          "proof": "A pace adviser with a four-row boundary-test note.",
+          "checks": [
+            "Exactly one recommendation appears",
+            "Boundary values behave intentionally",
+            "I can explain condition order"
+          ],
+          "stop": "Stop once boundary behavior is correct; no graphical interface.",
+          "hint": "Evaluate branches top to bottom on paper using one input."
+        },
+        {
+          "id": "p0s4",
+          "title": "Loops that finish",
+          "min": 65,
+          "outcome": "I can use for and while loops without accidental infinite loops.",
+          "steps": [
+            "Study loops in the primary course.",
+            "Use a for loop to total seven daily study-minute values.",
+            "Use enumerate to print day numbers starting at 1.",
+            "Write a countdown with a while loop and state what changes each iteration.",
+            "Add an empty-list case."
+          ],
+          "proof": "weekly_minutes.py plus one sentence explaining why its while loop terminates.",
+          "checks": [
+            "Correct total for a known list",
+            "Empty list returns zero",
+            "Loop termination is explainable"
+          ],
+          "stop": "Stop after the known-list and empty-list checks pass.",
+          "hint": "For while loops, identify start, condition, and update."
+        },
+        {
+          "id": "p0s5",
+          "title": "Functions with contracts",
+          "min": 75,
+          "outcome": "I can split behavior into small functions with inputs, outputs, and clear names.",
+          "steps": [
+            "Study functions and scope.",
+            "Refactor pace_adviser.py into recommend(minutes, exam_mode).",
+            "Write a docstring stating inputs, return value, and one constraint.",
+            "Call the function with at least five cases.",
+            "Remove hidden dependence on variables outside the function."
+          ],
+          "proof": "A reusable recommend function and five explicit examples.",
+          "checks": [
+            "Function returns rather than only prints",
+            "Examples cover each branch",
+            "Changing a global cannot change the result"
+          ],
+          "stop": "Stop after the function behaves predictably. Type hints are optional.",
+          "hint": "Ask: what must the function know, and what should it return?"
+        },
+        {
+          "id": "p0s6",
+          "title": "Lists and dictionaries",
+          "min": 75,
+          "outcome": "I can model a small real-world dataset and transform it with lists and dictionaries.",
+          "steps": [
+            "Study lists and dictionaries.",
+            "Represent three learning sessions as dictionaries with topic and minutes.",
+            "Compute total minutes and topics completed.",
+            "Group or filter sessions above a chosen duration.",
+            "Handle a missing optional note with dict.get."
+          ],
+          "proof": "session_report.py prints a useful summary from structured data.",
+          "checks": [
+            "Data and processing are separated",
+            "Missing optional note does not crash",
+            "I can add a fourth session in one place"
+          ],
+          "stop": "Stop once adding one record updates the report automatically.",
+          "hint": "First draw one session record on paper with field names."
+        },
+        {
+          "id": "p0s7",
+          "title": "Sets, tuples, and comprehensions",
+          "min": 70,
+          "outcome": "I can choose between list, set, tuple, and dictionary for a stated reason.",
+          "steps": [
+            "Review collection types and comprehensions.",
+            "Deduplicate repeated topic names with a set.",
+            "Store an immutable coordinate or date pair as a tuple.",
+            "Create a comprehension of completed topic names.",
+            "Write a comment explaining each collection choice."
+          ],
+          "proof": "collections_lab.py with four justified collection choices.",
+          "checks": [
+            "Deduplication works",
+            "Comprehension is readable",
+            "I can explain why a set is unordered"
+          ],
+          "stop": "Stop after four choices are justified; clever one-liners are not required.",
+          "hint": "Prefer the clearest loop if a comprehension becomes hard to say aloud."
+        },
+        {
+          "id": "p0s8",
+          "title": "Files and durable data",
+          "min": 80,
+          "outcome": "I can read and write a small text or CSV file safely.",
+          "steps": [
+            "Study file I/O and with blocks.",
+            "Create sessions.csv with a header and three rows.",
+            "Read it and calculate total minutes.",
+            "Write a summary.txt report.",
+            "Test behavior when the input file is missing."
+          ],
+          "proof": "Input CSV, generated summary, and a clear missing-file message.",
+          "checks": [
+            "Files close via with blocks",
+            "Header is not counted as data",
+            "Missing file is handled intentionally"
+          ],
+          "stop": "Stop when the report can be regenerated from the CSV.",
+          "hint": "Use pathlib.Path to make file paths easier to inspect."
+        },
+        {
+          "id": "p0s9",
+          "title": "Errors as information",
+          "min": 75,
+          "outcome": "I can distinguish syntax, type, value, and file errors and handle only expected failures.",
+          "steps": [
+            "Create one example of four common error categories.",
+            "Read each traceback from the bottom upward.",
+            "Add narrow exception handling to one input parser.",
+            "Avoid a blanket except.",
+            "Log the invalid value in a useful message."
+          ],
+          "proof": "errors_lab.py and a four-line error field guide in README.md.",
+          "checks": [
+            "I name each error category",
+            "Only expected exceptions are caught",
+            "Unexpected errors remain visible"
+          ],
+          "stop": "Stop after one good and two bad inputs behave clearly.",
+          "hint": "Catch the smallest specific exception around the smallest risky line."
+        },
+        {
+          "id": "p0s10",
+          "title": "Modules and a clean project",
+          "min": 80,
+          "outcome": "I can organize code across files and reproduce its environment.",
+          "steps": [
+            "Create a virtual environment and activate it.",
+            "Move reusable functions into helpers.py.",
+            "Import them from main.py.",
+            "Add .gitignore for the environment and cache files.",
+            "Write setup/run commands in README.md."
+          ],
+          "proof": "A small project another person could run from its README.",
+          "checks": [
+            "Imports work from a fresh terminal",
+            "Environment folder is ignored",
+            "README contains exact run command"
+          ],
+          "stop": "Stop when you can close the terminal, reopen it, and run from instructions.",
+          "hint": "Run dir and git status to see what exists and what is tracked."
+        },
+        {
+          "id": "p0s11",
+          "title": "Classes only where they help",
+          "min": 85,
+          "outcome": "I can create a class that protects a useful invariant and know when a dictionary is enough.",
+          "steps": [
+            "Study classes in the primary course.",
+            "Create a LearningSession class with topic and non-negative minutes.",
+            "Add a readable __str__ method.",
+            "Reject invalid negative minutes.",
+            "Write three sentences comparing this class to a dictionary."
+          ],
+          "proof": "learning_session.py with valid and invalid examples.",
+          "checks": [
+            "Invalid state is rejected",
+            "String output is useful",
+            "I can defend using or not using a class"
+          ],
+          "stop": "Stop after the comparison. Inheritance is stretch work.",
+          "hint": "A class earns its place by coupling data with behavior or rules."
+        },
+        {
+          "id": "p0s12",
+          "title": "Tests before confidence",
+          "min": 90,
+          "outcome": "I can write repeatable tests that cover normal, boundary, and invalid inputs.",
+          "steps": [
+            "Study pytest or CS50P testing material.",
+            "Choose recommend or LearningSession as the unit under test.",
+            "Write one normal, one boundary, and one invalid-input test.",
+            "Run tests, break the implementation, and observe a failure.",
+            "Fix it and record the command in README."
+          ],
+          "proof": "At least three automated tests with a witnessed fail-then-pass cycle.",
+          "checks": [
+            "All tests pass after the fix",
+            "A deliberate bug made a test fail",
+            "Tests do not rely on print inspection"
+          ],
+          "stop": "Stop at three meaningful tests; chasing coverage percentage is optional.",
+          "hint": "Each test should answer one behavior question."
+        },
+        {
+          "id": "p0s13",
+          "title": "Debug with evidence",
+          "min": 75,
+          "outcome": "I can pause execution, inspect state, and locate a bug without scattering print calls.",
+          "steps": [
+            "Open a prior project in the VS Code debugger.",
+            "Set a breakpoint inside a loop or function.",
+            "Step over and inspect two changing variables.",
+            "Use one conditional breakpoint or watch expression if available.",
+            "Write the bug, evidence, and fix in a debug note."
+          ],
+          "proof": "A short debugging note with symptom → observation → cause → fix.",
+          "checks": [
+            "Breakpoint pauses on the expected line",
+            "I inspected live values",
+            "Fix follows from observed evidence"
+          ],
+          "stop": "Stop once one real or planted bug is explained.",
+          "hint": "Use a deliberately wrong boundary condition if no natural bug exists."
+        },
+        {
+          "id": "p0s14",
+          "title": "Git as meaningful history",
+          "min": 70,
+          "outcome": "I can create a repository, inspect changes, and make coherent commits tied to deliverables.",
+          "steps": [
+            "Initialize Git in the Phase 0 project if needed.",
+            "Inspect git status and git diff.",
+            "Commit the working project as one meaningful deliverable.",
+            "Make a small README improvement and commit it separately.",
+            "View the log and explain why the split is useful."
+          ],
+          "proof": "A local repository with two coherent commits and a clean status.",
+          "checks": [
+            "No secrets or environment folder tracked",
+            "Commit messages describe outcomes",
+            "I can show the change in each commit"
+          ],
+          "stop": "Stop at a clean local repository. Publishing online is optional.",
+          "hint": "Commit when a meaningful unit works—not because a calendar day ended."
+        },
+        {
+          "id": "p0s15",
+          "title": "NumPy arrays and shapes",
+          "min": 90,
+          "outcome": "I can create, index, reshape, and combine arrays while tracking shape.",
+          "steps": [
+            "Install NumPy inside the project environment.",
+            "Create 1D and 2D arrays and print shape and dtype.",
+            "Select rows, columns, and a slice.",
+            "Reshape compatible data and explain why one incompatible reshape fails.",
+            "Compute column means."
+          ],
+          "proof": "numpy_shapes.py with prediction comments before each printed shape.",
+          "checks": [
+            "Shape predictions are correct",
+            "Slicing does not confuse rows and columns",
+            "Failed reshape is explained by element count"
+          ],
+          "stop": "Stop after column means and shape explanations.",
+          "hint": "Write dimensions as rows × columns before running."
+        },
+        {
+          "id": "p0s16",
+          "title": "Vectorization and broadcasting",
+          "min": 95,
+          "outcome": "I can replace a simple Python loop with a vectorized NumPy operation and validate the result.",
+          "steps": [
+            "Normalize a numeric array with a loop.",
+            "Implement the same result with NumPy operations.",
+            "Use broadcasting to center each column of a matrix.",
+            "Compare outputs with np.allclose.",
+            "Record shape at every transformation."
+          ],
+          "proof": "vectorization.py with loop and vectorized versions that agree.",
+          "checks": [
+            "np.allclose is true",
+            "Broadcasting dimensions are explainable",
+            "No premature performance claims"
+          ],
+          "stop": "Stop when results match; benchmarking is optional.",
+          "hint": "Align shapes from the trailing dimensions when reasoning about broadcasting."
+        },
+        {
+          "id": "p0s17",
+          "title": "Plot a truthful story",
+          "min": 85,
+          "outcome": "I can choose a basic chart, label it clearly, and avoid implying more than the data shows.",
+          "steps": [
+            "Install Matplotlib in the environment.",
+            "Plot daily minutes as a line or bar chart.",
+            "Add title, axis labels, units, and source note.",
+            "Create one misleading version, then identify and fix the issue.",
+            "Save the final figure to a file."
+          ],
+          "proof": "A readable PNG and a two-sentence chart interpretation.",
+          "checks": [
+            "Axes and units are labeled",
+            "Interpretation matches data",
+            "Misleading choice is identified"
+          ],
+          "stop": "Stop after one honest chart. Styling is not the objective.",
+          "hint": "Start the y-axis at zero for bars unless you have a stated reason not to."
+        },
+        {
+          "id": "p0s18",
+          "title": "Phase 0 proof: learning-log CLI",
+          "min": 150,
+          "outcome": "I can independently build, test, debug, document, and version a small Python program.",
+          "steps": [
+            "Build a CLI that adds a learning session to a local CSV or JSON file.",
+            "Support listing sessions and computing total minutes by topic.",
+            "Validate bad or negative input.",
+            "Write at least six tests across core behavior.",
+            "Use the debugger on one planted defect.",
+            "Write a README with setup, use, design choices, and limitations.",
+            "Create coherent commits after working deliverables."
+          ],
+          "proof": "A local learning-log repository with tests, sample data, README, and clean Git history.",
+          "checks": [
+            "A new user can follow the README",
+            "Data survives program restart",
+            "Invalid input is handled",
+            "Six meaningful tests pass",
+            "I can explain every function without notes"
+          ],
+          "stop": "Stop when the checkpoint evidence exists. Publishing and extra features are optional.",
+          "hint": "Build one vertical slice first: add one session, save it, restart, list it."
+        }
+      ],
+      "gates": [
+        "Build the learning-log CLI from a blank folder using documentation, not a copied tutorial",
+        "Write and pass tests for normal, boundary, and invalid behavior",
+        "Read a traceback and use a debugger to locate a planted bug",
+        "Explain choices among function, dictionary, class, list, set, and tuple",
+        "Create a reproducible environment, README, and coherent Git history",
+        "Manipulate NumPy arrays while predicting shapes, then produce one labeled plot"
+      ]
+    },
+    {
+      "id": "p1",
+      "number": "1",
+      "name": "Math & Practical ML",
+      "range": "Typical range: 10–16 weeks",
+      "summary": "Connect mathematical intuition to a reproducible classical ML workflow on real tabular data.",
+      "promise": "You can build and critique a leakage-resistant scikit-learn experiment, not merely fit a model.",
+      "primary": "Kaggle Learn Intro + Intermediate ML, supported by StatQuest and targeted math",
+      "priorities": [
+        "pandas inspection, cleaning, joins, grouping and visualization",
+        "Train/validation/test splits and leakage-resistant pipelines",
+        "Regression/classification metrics, baselines and error analysis",
+        "Cross-validation, reproducibility, tests and experiment reports",
+        "Linear algebra, calculus, probability and optimization connected to code"
+      ],
+      "stretch": [
+        "Derive linear regression gradients from scratch",
+        "PCA from eigendecomposition",
+        "Kaggle competition ranking or extensive tuning"
+      ],
+      "resources": [
+        {
+          "name": "Kaggle Learn",
+          "url": "https://www.kaggle.com/learn",
+          "role": "Primary practical sequence",
+          "note": "Intro to ML, Pandas, Intermediate ML, Data Visualization.",
+          "checked": "Course availability can change; check current catalog"
+        },
+        {
+          "name": "scikit-learn User Guide",
+          "url": "https://scikit-learn.org/stable/user_guide.html",
+          "role": "Primary reference",
+          "note": "Use current stable docs for splits, pipelines, metrics and CV.",
+          "checked": "Version-sensitive"
+        },
+        {
+          "name": "pandas User Guide",
+          "url": "https://pandas.pydata.org/docs/user_guide/",
+          "role": "Reference",
+          "note": "Focus on 10 minutes to pandas, missing data, merge, groupby.",
+          "checked": "Version-sensitive"
+        },
+        {
+          "name": "StatQuest",
+          "url": "https://statquest.org/",
+          "role": "Concept backup",
+          "note": "Use by topic for metrics, models, probability and statistics.",
+          "checked": "Verify current playlists"
+        },
+        {
+          "name": "3Blue1Brown",
+          "url": "https://www.3blue1brown.com/",
+          "role": "Intuition",
+          "note": "Linear algebra and calculus series before formal derivations.",
+          "checked": "Evergreen series"
+        }
+      ],
+      "sessions": [
+        {
+          "id": "p1s1",
+          "title": "pandas: inspect before cleaning",
+          "min": 90,
+          "outcome": "I can Load a tabular dataset, identify types/missingness, and write a data-quality memo.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p1s2",
+          "title": "pandas: transform with intent",
+          "min": 90,
+          "outcome": "I can Filter, assign, group, aggregate, merge, and verify row-count assumptions.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p1s3",
+          "title": "Define the prediction problem",
+          "min": 90,
+          "outcome": "I can Specify target, unit of observation, available-at-prediction features, and harm from errors.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p1s4",
+          "title": "Split before learning",
+          "min": 90,
+          "outcome": "I can Create train/validation/test splits and explain why the test set stays untouched.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p1s5",
+          "title": "Baselines and first model",
+          "min": 90,
+          "outcome": "I can Compare a dummy baseline with a simple scikit-learn model.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p1s6",
+          "title": "Metrics match consequences",
+          "min": 90,
+          "outcome": "I can Use MAE/RMSE or precision/recall/F1/ROC-AUC appropriately and discuss trade-offs.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p1s7",
+          "title": "Leakage detective",
+          "min": 90,
+          "outcome": "I can Find target, train-test, temporal, and preprocessing leakage in flawed examples.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p1s8",
+          "title": "Pipelines and preprocessing",
+          "min": 90,
+          "outcome": "I can Put imputation, encoding, scaling, and the estimator in a Pipeline.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p1s9",
+          "title": "Cross-validation without self-deception",
+          "min": 90,
+          "outcome": "I can Use suitable folds and report mean plus spread, not a single lucky score.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p1s10",
+          "title": "Reproducible experiments",
+          "min": 90,
+          "outcome": "I can Fix seeds where meaningful, pin dependencies, save config, and rerun from a clean process.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p1s11",
+          "title": "Error analysis over score chasing",
+          "min": 90,
+          "outcome": "I can Slice errors by meaningful groups and inspect representative failures.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p1s12",
+          "title": "Test the data and model code",
+          "min": 90,
+          "outcome": "I can Add schema, transformation, determinism, and smoke tests.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p1s13",
+          "title": "Linear algebra in code",
+          "min": 90,
+          "outcome": "I can Connect vectors, dot products, matrices, projections, eigenvectors, and SVD to model operations.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p1s14",
+          "title": "Calculus and gradient descent",
+          "min": 90,
+          "outcome": "I can Derive and implement a small gradient update; compare numerical and analytic gradients.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p1s15",
+          "title": "Probability and uncertainty",
+          "min": 90,
+          "outcome": "I can Work with conditional probability, distributions, expectation, variance, and calibration.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p1s16",
+          "title": "From-scratch linear model",
+          "min": 90,
+          "outcome": "I can Implement linear or logistic regression with NumPy and compare against sklearn.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p1s17",
+          "title": "Capstone: trustworthy tabular ML",
+          "min": 90,
+          "outcome": "I can Deliver a tested pipeline, model card, data note, error analysis, and honest limitations.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        }
+      ],
+      "gates": [
+        "Frame a prediction task with target, unit, features, and failure costs",
+        "Build a pandas-to-Pipeline workflow that prevents preprocessing leakage",
+        "Choose and explain metrics based on consequences",
+        "Use cross-validation correctly and preserve a final holdout",
+        "Reproduce results from a clean environment with tests",
+        "Publish a concise experiment report including baseline, errors, limitations, and next experiment"
+      ]
+    },
+    {
+      "id": "p2",
+      "number": "2",
+      "name": "Deep Learning Systems",
+      "range": "Typical range: 16–26 weeks",
+      "summary": "Prioritize neural-network fundamentals, PyTorch fluency, transformers, evaluation, and reliable experiments.",
+      "promise": "You can implement and diagnose a small neural network and transformer experiment end to end.",
+      "primary": "Karpathy Zero to Hero + PyTorch official tutorials",
+      "priorities": [
+        "Backpropagation, initialization, optimization and training diagnostics",
+        "PyTorch tensors, autograd, modules, datasets and device-aware loops",
+        "Attention and a small character-level transformer",
+        "Evaluation, checkpoints, experiment tracking and reproducibility"
+      ],
+      "stretch": [
+        "CNN deep dive",
+        "Fine-tune a small open model with parameter-efficient methods",
+        "RAG application",
+        "Distributed training"
+      ],
+      "resources": [
+        {
+          "name": "Neural Networks: Zero to Hero",
+          "url": "https://karpathy.ai/zero-to-hero.html",
+          "role": "Primary",
+          "note": "Implement each major idea before watching the next implementation.",
+          "checked": "Check current course index"
+        },
+        {
+          "name": "PyTorch Tutorials",
+          "url": "https://pytorch.org/tutorials/",
+          "role": "Primary framework",
+          "note": "Use Learn the Basics and official recipes matching your installed version.",
+          "checked": "Version-sensitive"
+        },
+        {
+          "name": "Dive into Deep Learning",
+          "url": "https://d2l.ai/",
+          "role": "Reference",
+          "note": "Use selected chapters; do not run a second course in parallel.",
+          "checked": "Living online book"
+        },
+        {
+          "name": "Attention Is All You Need",
+          "url": "https://arxiv.org/abs/1706.03762",
+          "role": "Primary paper",
+          "note": "Read in three passes after implementing attention once.",
+          "checked": "Stable paper; surrounding best practices evolve"
+        }
+      ],
+      "sessions": [
+        {
+          "id": "p2s1",
+          "title": "Scalar autograd",
+          "min": 90,
+          "outcome": "I can Build values, operations, topological ordering, and backward propagation.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p2s2",
+          "title": "MLP from primitives",
+          "min": 90,
+          "outcome": "I can Train a tiny network and verify gradients numerically.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p2s3",
+          "title": "Training diagnostics",
+          "min": 90,
+          "outcome": "I can Use tiny-batch overfit, baseline loss, activation statistics, and gradient checks.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p2s4",
+          "title": "PyTorch tensor fluency",
+          "min": 90,
+          "outcome": "I can Track shape, dtype, device, views, broadcasting, and autograd.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p2s5",
+          "title": "A reliable training loop",
+          "min": 90,
+          "outcome": "I can Separate train/eval modes, zero gradients, checkpoint, and resume.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p2s6",
+          "title": "Data pipelines",
+          "min": 90,
+          "outcome": "I can Create Dataset/DataLoader flows with deterministic validation transforms.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p2s7",
+          "title": "Optimization experiments",
+          "min": 90,
+          "outcome": "I can Compare learning rates, initialization, normalization, regularization, and schedulers one variable at a time.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p2s8",
+          "title": "Tokenization and language-model data",
+          "min": 90,
+          "outcome": "I can Build character/token sequences and prevent context/target mistakes.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p2s9",
+          "title": "Attention from equations",
+          "min": 90,
+          "outcome": "I can Implement masked scaled dot-product attention and test shape and masking invariants.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p2s10",
+          "title": "Transformer blocks",
+          "min": 90,
+          "outcome": "I can Assemble embeddings, heads, MLP, residual stream, normalization, and causal mask.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p2s11",
+          "title": "miniGPT capstone",
+          "min": 90,
+          "outcome": "I can Train, checkpoint, sample, evaluate, and document a small language model.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p2s12",
+          "title": "Evaluation and failure analysis",
+          "min": 90,
+          "outcome": "I can Compare loss/perplexity, qualitative samples, data contamination risks, and compute limits.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p2s13",
+          "title": "Responsible experiment report",
+          "min": 90,
+          "outcome": "I can Record data provenance, intended use, risks, reproducibility, and negative results.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p2s14",
+          "title": "Optional: CNN investigation",
+          "min": 90,
+          "outcome": "I can Implement a compact vision model and inspect mistakes.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p2s15",
+          "title": "Optional: efficient fine-tuning",
+          "min": 90,
+          "outcome": "I can Fine-tune a small permitted model with an explicit evaluation plan.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p2s16",
+          "title": "Optional: retrieval system",
+          "min": 90,
+          "outcome": "I can Build retrieval, cite sources, evaluate retrieval separately from generation.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        }
+      ],
+      "gates": [
+        "Implement and gradient-check a small autograd engine or MLP",
+        "Diagnose a broken training run using evidence rather than random changes",
+        "Write a device-safe PyTorch train/eval/checkpoint loop",
+        "Implement masked attention and explain every tensor shape",
+        "Train and evaluate a small transformer reproducibly",
+        "Write an honest model/experiment report with risks and limitations"
+      ]
+    },
+    {
+      "id": "p3",
+      "number": "3",
+      "name": "Beneficial AI Exploration",
+      "range": "Open-ended after foundations",
+      "summary": "Explore technical AI safety, evaluations, interpretability, robustness, and adjacent beneficial work before choosing a specialization.",
+      "promise": "You can compare subfields through small replications and choose a provisional direction using evidence.",
+      "primary": "ARENA selected chapters + current primary literature",
+      "priorities": [
+        "Research reading, replication and uncertainty-aware writing",
+        "Model evaluations, robustness and responsible measurement",
+        "Interpretability fundamentals and causal interventions",
+        "Alignment methods and their assumptions",
+        "Security and red-team work within authorized scopes"
+      ],
+      "stretch": [
+        "Sparse autoencoder replication",
+        "Preference-learning experiment",
+        "Original mechanistic interpretability hypothesis",
+        "Public research contribution"
+      ],
+      "resources": [
+        {
+          "name": "ARENA",
+          "url": "https://arena.education/",
+          "role": "Technical backbone",
+          "note": "Select chapters that match exploration questions; curriculum changes over time.",
+          "checked": "Time-sensitive; check current edition"
+        },
+        {
+          "name": "AI Safety Fundamentals",
+          "url": "https://aisafetyfundamentals.com/",
+          "role": "Landscape overview",
+          "note": "Cohort dates and tracks change; self-study materials may remain available.",
+          "checked": "Time-sensitive programs"
+        },
+        {
+          "name": "TransformerLens",
+          "url": "https://transformerlensorg.github.io/TransformerLens/",
+          "role": "Interpretability tool",
+          "note": "Match notebooks to current library version.",
+          "checked": "Version-sensitive"
+        },
+        {
+          "name": "OWASP Top 10 for LLM Applications",
+          "url": "https://owasp.org/www-project-top-10-for-large-language-model-applications/",
+          "role": "Security reference",
+          "note": "Use only authorized systems and current guidance.",
+          "checked": "Time-sensitive guidance"
+        }
+      ],
+      "sessions": [
+        {
+          "id": "p3s1",
+          "title": "Map the safety landscape",
+          "min": 90,
+          "outcome": "I can Compare evaluations, interpretability, robustness, alignment methods, governance interfaces, and security.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p3s2",
+          "title": "Read papers with three passes",
+          "min": 90,
+          "outcome": "I can Extract claim, evidence, assumptions, limitations, and one replication target.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p3s3",
+          "title": "Reproduce before extending",
+          "min": 90,
+          "outcome": "I can Recreate one figure or table with provenance and discrepancy notes.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p3s4",
+          "title": "Evaluation design",
+          "min": 90,
+          "outcome": "I can Define construct, threat model, dataset, metric, uncertainty, and misuse risk.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p3s5",
+          "title": "Robustness and distribution shift",
+          "min": 90,
+          "outcome": "I can Test performance under controlled shifts and distinguish robustness from average score.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p3s6",
+          "title": "Interpretability foundations",
+          "min": 90,
+          "outcome": "I can Use probes, attribution, activation patching, and causal language carefully.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p3s7",
+          "title": "TransformerLens investigation",
+          "min": 90,
+          "outcome": "I can Form one falsifiable question and run a small causal intervention.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p3s8",
+          "title": "Alignment methods survey",
+          "min": 90,
+          "outcome": "I can Compare RLHF, DPO, constitutional approaches, scalable oversight, and their assumptions.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p3s9",
+          "title": "Authorized red teaming",
+          "min": 90,
+          "outcome": "I can Create a scoped threat model, safe test plan, disclosure path, and harm-minimizing report.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p3s10",
+          "title": "Research engineering",
+          "min": 90,
+          "outcome": "I can Package configuration, tests, environment, artifacts, and a one-command reproduction path.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p3s11",
+          "title": "Provisional specialization sprint",
+          "min": 90,
+          "outcome": "I can Run two 2-week mini-projects in different subfields and compare fit/evidence.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p3s12",
+          "title": "Research memo",
+          "min": 90,
+          "outcome": "I can Write claim, method, result, uncertainty, limitations, ethics, and next experiment.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p3s13",
+          "title": "Contribution pathway",
+          "min": 90,
+          "outcome": "I can Improve documentation, reproduce an issue, add tests, or answer a scoped community need.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        },
+        {
+          "id": "p3s14",
+          "title": "Reassess direction",
+          "min": 90,
+          "outcome": "I can Choose a 12-week provisional focus, alternatives, and a date to review the decision.",
+          "steps": [
+            "Review the named concept from the phase's primary resource.",
+            "Write a prediction or plan before coding.",
+            "Build the smallest working example from a blank file or notebook.",
+            "Test a normal case, an edge case, and one failure mode.",
+            "Record what changed your mind and the next question."
+          ],
+          "proof": "A runnable artifact plus a concise evidence note: claim, test, result, limitation.",
+          "checks": [
+            "Artifact runs from documented steps",
+            "Evidence includes an edge or failure case",
+            "I can explain the result without reading code"
+          ],
+          "stop": "Stop when the evidence note is complete. Extra tuning and polish are optional.",
+          "hint": "Shrink the data and problem until you can inspect every input and output."
+        }
+      ],
+      "gates": [
+        "Reproduce a nontrivial result and document discrepancies",
+        "Design an evaluation that measures a stated construct with uncertainty",
+        "Run one small causal interpretability or robustness experiment",
+        "Explain assumptions and failure modes of at least two alignment approaches",
+        "Demonstrate authorized, harm-minimizing security practice",
+        "Choose only a provisional specialization backed by two exploration projects"
+      ]
+    }
+  ],
+  "safetyNet": {
+    "cs": [
+      "Data structures: arrays, hash maps, stacks/queues, trees, graphs",
+      "Complexity reasoning and debugging",
+      "Operating systems, networking, databases, and software design basics",
+      "Testing, version control, documentation, and reading unfamiliar code"
+    ],
+    "career": [
+      "One polished deliverable per phase with a clear README",
+      "Semester-aligned coursework counts when evidence matches a gate",
+      "Practice explaining a project in 2, 5, and 10 minutes",
+      "Ask professors with evidence: a reproduction, useful question, or tested contribution",
+      "Review internships and programs quarterly; dates and eligibility are time-sensitive"
+    ]
+  }
+}

@@ -1,0 +1,60 @@
+"use client";
+
+import Link from "next/link";
+import { ArrowRight, LockKeyhole, Radio, ShieldCheck } from "lucide-react";
+import { model } from "@/data";
+import { getActivePhase, getPhaseAccess, getPhaseProgress, isPhaseCleared } from "@/state/selectors";
+import { useMeridianStore } from "@/state/store";
+import { DisplayPair } from "./labeled-item";
+import { KineticText } from "./motion/kinetic-text";
+import { Reveal } from "./motion/scroll-progress";
+import { ScrollDrawing } from "./rive/scroll-drawing";
+
+export function PathView() {
+  const state = useMeridianStore();
+  const active = getActivePhase(model, state);
+  return (
+    <div className="content">
+      <div className="page-kicker eyebrow">The learning path</div>
+      <h1 className="page-title">
+        <KineticText as="span" trigger="hover">
+          A path, not a pile.
+        </KineticText>
+      </h1>
+      <p className="page-intro">Capability gates decide what opens next. Calendar windows are suggestions, not deadlines.</p>
+      <div className="path-list">
+        {model.phases.map((phase) => {
+          const cleared = isPhaseCleared(phase, state);
+          const current = active.id === phase.id && !cleared;
+          const progress = getPhaseProgress(model, phase, state);
+          const access = getPhaseAccess(model, phase, state);
+          const locked = !access.allowed;
+          const card = <>
+            <span className="path-number">{String(phase.identity.number + 1).padStart(2, "0")}</span>
+            <span>
+              <DisplayPair
+                className="path-copy"
+                title={phase.identity.northstarName}
+                description={phase.identity.promise}
+                meta={`${phase.identity.typicalRange} · ${phase.identity.weeks} suggested calendar window`}
+              />
+            </span>
+            <span className="path-state">
+              {cleared ? <><ShieldCheck size={13} style={{ verticalAlign: "middle" }} /> Cleared</> : locked ? <><LockKeyhole size={13} style={{ verticalAlign: "middle" }} /> Prerequisite required</> : <><Radio size={13} style={{ verticalAlign: "middle" }} /> {access.overridden ? "Override" : current ? "Current" : "Open"} · {progress.percent}% capability</>}
+              <ArrowRight size={14} style={{ verticalAlign: "middle", marginLeft: 8 }} aria-hidden="true" />
+            </span>
+          </>;
+          return (
+            <Reveal as="div" key={phase.id}>
+              <Link className={`path-item${locked ? " locked" : ""}`} href={`/path/${phase.id}`} aria-label={`${locked ? "View prerequisite for" : "Open"} Phase ${phase.identity.number + 1}: ${phase.identity.northstarName}`}>{card}</Link>
+            </Reveal>
+          );
+        })}
+      </div>
+      <Reveal as="section" className="section" aria-label="The path, drawn by your scroll">
+        <ScrollDrawing />
+        <p className="hint">The line above draws itself with your scroll — four stations, one arrival. Evidence opens each one; nothing else does.</p>
+      </Reveal>
+    </div>
+  );
+}

@@ -1,0 +1,135 @@
+# Project TODO
+
+- [x] Validate and import the complete supplied curriculum: exactly 65 guided sessions across the four specified phases
+- [x] Define database schema for per-user progress, gate evidence, journal entries, DSA tracking, and settings
+- [x] Implement authenticated tRPC procedures and database persistence for cross-device synchronization
+- [x] Create the polished dark black-and-white corporate design system and responsive sidebar dashboard shell
+- [x] Build the Dashboard Home with greeting, exact next session, aggregate progress, and pacing mode
+- [x] Build the four-phase pipeline using the required phase names, priorities, stretch goals, progress, and capability gates
+- [x] Build guided session detail pages with outcomes, steps, evidence criteria, completion checks, stop conditions, and hints
+- [x] Enforce evidence-backed session completion through capability-gate checks
+- [x] Build a private searchable three-field journal with evidence, confusion, and next question
+- [x] Build the complete curated resource library with phase/category filters and external resource links
+- [x] Build the DSA parallel track with NeetCode milestones, 30-minute allocation, resources, and problem count progress
+- [x] Build AI learning protocol guidance and pacing support
+- [x] Build settings with exact pacing labels: Semester, Exam, Vacation, Flexible; a silent focus timer; JSON export and JSON import
+- [x] Add unit tests for curriculum invariants, protected progress persistence, and backup data validation
+- [x] Validate desktop/mobile layout, critical data flows, and visual polish with screenshots
+- [x] Save a final completed project checkpoint and deliver the project
+- [x] Send the final project delivery report with the release checkpoint and implementation summary
+- [x] Inspect the supplied Meridian archive and identify its runnable application structure
+- [x] Replace the current Northstar website with Meridian and remove obsolete Northstar routes, content, and branding
+- [x] Reconcile Meridian dependencies and runtime configuration with the managed project environment
+- [x] Add or update tests for the adopted Meridian website and verify its responsive rendering
+- [x] Save a replacement checkpoint and report the publish-ready Meridian project
+- [x] Diagnose and fix the production deployment artifact path expected by the managed publishing pipeline
+- [x] Validate the corrected build emits deployable static files without regressing Meridian’s test suite
+- [x] Save and report the corrected deployment checkpoint
+- [x] Emit the required dist/index.js runtime entry point for the managed container startup command
+- [x] Verify the emitted production runtime binds to the managed port and serves the exported Meridian site
+- [x] Save and report the final container-startup deployment correction
+- [x] Restore scrolling or full navigation reachability for the Meridian sidebar, including Library & network and Portfolio
+- [x] Repair task checkbox persistence and completion feedback in Today and every other interactive Meridian section
+- [x] Add regression tests for sidebar overflow and task completion controls
+- [x] Validate the repaired desktop and mobile interactions, then publish the fix
+- [x] Resolve the sidebar regression test compatibility error and rerun the production build
+- [x] Add an immediate onboarding exit so first-time users can reach task and navigation controls without completing setup
+- [x] Audit all Meridian sections using shared task completion controls and add cross-section regression coverage
+- [x] Verify sidebar scrolling and task toggling in browser on affected routes, then save and publish the interaction fix
+- [x] Correct the cross-section completion regression assertion and rerun the full release build
+- [x] Correct phase-tab links to the exported static phase route identifiers so curriculum checklists remain reachable after publishing
+- [x] Remove dynamic phase-tab query rendering so all Meridian routes can be exported statically
+- [x] Resolve the Meridian production-build compatibility error and revalidate the Next.js release build
+- [x] Resolve Meridian’s persistent local-state hydration screen in fresh browser sessions and reverify responsive routes
+- [x] Add Meridian-specific test coverage for hydration fallback and route rendering
+- [x] Verify Meridian’s responsive layout at a mobile viewport
+- [x] Confirm the primary managed preview exits the hydration state in a fresh browser session or align its runtime with the verified production behavior
+- [x] Add representative Meridian route-render coverage beyond the local-state hydration test
+- [x] Capture a fresh primary-preview browser verification after the production-runtime switch
+- [x] Enforce session-level evidence verification server-side before completion and reflect the locked/unlocked state in the session UI
+- [x] Verify resource normalization retains every supplied category and all rated resources, including DSA, books, tools, and communities
+- [x] Add automated tests for server-enforced evidence gates and resource-library completeness
+- [x] Add persistence-focused tests for authenticated settings, journal, session, and backup flows
+- [x] Run and confirm the evidence-gate and resource-library coverage test suite
+- [x] Exercise authenticated critical UI flows for gated completion, journal creation/search, settings save, and JSON backup/restore
+- [x] Add a direct persistence test proving that authenticated session completion storage succeeds after evidence is recorded
+- [x] Remove the interactive login gate and open Northstar directly into a single-user personal workspace
+- [x] Replace user-session dependencies with a fixed local owner data scope while preserving database-backed learning data
+- [x] Update tests and visual verification for direct-access persistence and remove obsolete authentication messaging
+- [x] Remove residual dashboard and app-entry authentication queries now that the workspace opens directly
+- [x] Fix the journal route hook-order runtime error and rerun cross-route visual verification
+- [x] Recover the original Northstar resource-library structure and map each resource to an appropriate Meridian phase and learning tier
+- [x] Redesign Library & Network with phase-tier filtering, curated resource context, and resource-type navigation
+- [x] Add regression coverage and browser validation for the expanded phase-tiered resource library
+- [x] Add interactive Anchor, Core, Support, and Later-depth resource filtering within each selected phase
+- [x] Add behavioral tests and pointer-driven browser checks for phase selection, tier filtering, and legacy resource-tab navigation
+- [x] Resolve the headless pointer-delivery validation issue before closing the resource-library release
+- [x] Add a rendered Library & Network behavior test for phase selection, tier filtering, and legacy tab output
+- [x] Conduct a read-only product and technical review of Meridian with a detailed implementation roadmap; do not modify application code
+- [x] Consolidate the supplied Meridian improvement roadmaps into one implementation backlog and preserve legacy data compatibility
+- [x] Document the consolidated roadmap and non-breaking legacy local-data compatibility contract before migration work
+- [x] Correct local-date handling, habit persistence, measured session time, resilient streaks, and capability-weighted progress
+- [x] Add explicit capability weighting rules, pure-selector coverage, and UI descriptions for weighted progress
+- [x] Validate measured session-time pause, completion, persistence, and daily/weekly-total behavior in the browser
+- [x] Audit and correct remaining Meridian date-sensitive writers and readers for local-calendar consistency
+- [x] Complete a guided session after timer use and verify elapsed time is persisted once with correct daily and weekly totals after refresh
+- [x] Enforce phase and session prerequisites with clear requirements, skip states, and audited overrides
+- [x] Define a stable progression-access policy and persist timestamped phase/session overrides with reasons
+- [x] Block unavailable phase and session entry points while rendering the exact prerequisite and an explicit override path
+- [x] Add selector, store, and browser validation for sequential session access, phase gates, and override behavior
+- [x] Standardize user-facing phase labels from the internal zero-based identifiers to Phase 1–4
+- [x] Surface active override reasons and timestamps in unlocked phase and session views
+- [x] Add capacity-aware daily and weekly learning plans with transparent recommendations and controlled carry-forward
+- [x] Add versioned daily-plan records with generated, accepted, completed, and deferred task states
+- [x] Build a deterministic capacity and task-selection engine that exposes its recommendation reasons
+- [x] Add Today controls to create, accept, complete, defer, and regenerate a focused daily plan
+- [x] Add a weekly planning surface with planned versus measured time and controlled carry-forward review
+- [x] Add unit, persistence, and browser coverage for capacity, planning, and carry-forward decisions
+- [x] Show proposed task minutes separately from selected daily capacity so unused time is intentionally visible
+- [x] Verify accepted plans, task completion, deferral, and weekly ledger changes through trusted browser interactions
+- [x] Add an Evidence Vault, capability records, proof policies, and a resource workspace with personal resource states
+- [x] Define versioned local evidence records with capability, phase, session, resource, URL, note, and proof-status metadata
+- [x] Capture an evidence record when a guided session is completed and preserve the original journal entry
+- [x] Expand Portfolio into an Evidence Vault with structured capture, filtering, editing, and safe deletion
+- [x] Add personal resource states for saved, active, completed, and paused resources with contextual notes
+- [x] Add evidence, resource-state, and proof-policy regression and browser validation
+- [x] Correct the Evidence Vault capture form so the proof note spans the full desktop input grid
+- [x] Add an undoable confirmation step for Evidence Vault deletion and verify that evidence is not removed until confirmed
+- [x] Validate the session proof policy’s blocked state before all evidence checks are complete
+- [x] Add retrieval practice, confusion capture, weekly decisions, and private learning analytics
+- [x] Extend journal records with additive confusion and next-question fields and capture them from guided sessions
+- [x] Create local spaced-retrieval prompts from confusion notes with due, reviewed, snoozed, and mastered states
+- [x] Add a keyboard-accessible Recall workspace and navigation entry for due prompts
+- [x] Add explicit weekly continue, stop, and start decisions alongside the existing weekly reflection
+- [x] Add private learning analytics for the streak calendar, measured time by phase, and capability trajectory
+- [x] Add selector, persistence, rendered-view, and trusted-browser validation for learning-intelligence workflows
+- [x] Add rendered-view coverage for Recall prompts plus weekly decision and analytics surfaces
+- [x] Re-run and record the successful trusted-browser learning-intelligence workflow audit before publishing
+- [x] Migrate local persistence to versioned IndexedDB with safe migration, verified backup, restore preview, and legacy imports
+- [x] Introduce a versioned IndexedDB persistence adapter with explicit localStorage fallback and non-blocking hydration
+- [x] Migrate the legacy meridian.v1 snapshot exactly once without overwriting newer IndexedDB data
+- [x] Add versioned JSON envelopes with checksum validation, pre-restore preview, and atomic import failure handling
+- [x] Expand Settings with persistence health, verified export, restore preview, confirmed restore, and legacy import controls
+- [x] Add store, adapter, rendered-view, and trusted-browser validation for migration, preview, cancellation, and restore flows
+- [x] Add installable offline support, accessibility improvements, command actions, and durable session-attempt tracking
+- [x] Add an installable PWA manifest, branded icons, and service worker caching for the static local-first workspace
+- [x] Add accessibility landmarks, skip navigation, descriptive labels, reliable focus restoration, and reduced-motion safeguards
+- [x] Expand the keyboard command palette with direct create, resume, recall, and backup actions
+- [x] Persist in-progress session attempts with time, step, and reflection drafts, then offer explicit resume or discard recovery
+- [x] Add automated, rendered-view, and trusted-browser validation for offline assets, keyboard commands, accessibility, and session recovery
+- [x] Add a direct command-palette evidence-capture action that focuses the creation form
+- [x] Verify focus returns to the initiating element when the command palette closes
+- [x] Prevent stale cached application shells from masking newly published Meridian updates and verify direct creation through a rebuilt offline client
+- [x] Add explicit reduced-motion safeguards and validation for Meridian’s new resilient interfaces
+- [x] Add descriptive accessibility labels for offline status and recovery controls, with regression coverage
+- [x] Expand automated and browser workflow coverage for all critical Meridian learning flows
+- [x] Run the complete automated suite and clean static export from the final candidate
+- [x] Re-run trusted browser audits for progression, planning, timed completion, evidence, retrieval, persistence, and resilience
+- [x] Visually inspect representative desktop and mobile routes after final-state browser audits
+- [x] Record final validation results and publish the completed Meridian release
+- [x] Capture explicit passing output for the final test/build baseline and all remaining progression, planning, and timed-completion browser audits
+- [x] Save the final Meridian release checkpoint and record its published version
+- [x] Prepare and deliver a user-focused review of Meridian’s implemented features and learning benefits
+- [x] Inventory every editable current Meridian source, configuration, test, documentation, server, script, and public file for delivery
+- [x] Create a complete current-source archive excluding only dependencies, generated build artifacts, logs, and secrets
+- [x] Generate and verify an archive manifest before delivering the complete Meridian source package
