@@ -1,7 +1,7 @@
 "use client";
 
 import Fuse, { type IFuseOptions } from "fuse.js";
-import { ExternalLink, SearchX } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { model } from "@/data";
 import { useMeridianStore } from "@/state/store";
@@ -198,15 +198,32 @@ export function LibraryExplorer({ initialPhase }: { initialPhase?: string }) {
 
       <div className="lx-toolbar">
         <div className="lx-search-row">
+          {/* Clean search field — the SearchList pattern: icon, input, clear. */}
           <div className="lx-search">
-            <SearchGlyph />
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" />
+              <path d="M21 21l-4.3-4.3" />
+            </svg>
             <input
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search resources, communities, tools, books…"
+              placeholder="Search the shelf…"
               aria-label="Search the library"
             />
+            {query && (
+              <button
+                type="button"
+                aria-label="Clear search"
+                onClick={() => setQuery("")}
+                className="lx-clear"
+                style={{ animation: "fade-in 150ms ease-out both" }}
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              </button>
+            )}
           </div>
           <label className="sr-only" htmlFor="lx-sort">Sort results</label>
           <select id="lx-sort" className="lx-sort" value={sort} onChange={(event) => setSort(event.target.value as SortMode)}>
@@ -286,19 +303,19 @@ export function LibraryExplorer({ initialPhase }: { initialPhase?: string }) {
       </div>
 
       {results.length === 0 && (
-        <div className="lx-empty" role="status">
-          <svg width="72" height="52" viewBox="0 0 72 52" aria-hidden="true">
-            <path d="M14 34 C14 20, 26 12, 38 14 C52 16, 60 24, 58 34 C57 42, 48 46, 36 45 C24 44, 14 42, 14 34 Z" fill="none" stroke="var(--rule-strong)" strokeWidth="1.5" />
-            <circle cx="29" cy="28" r="2" fill="var(--faint)" />
-            <circle cx="44" cy="27" r="2" fill="var(--faint)" />
-            <path d="M30 37 C34 34, 40 34, 43 36" fill="none" stroke="var(--faint)" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
+        <div className="lx-empty" role="status" style={{ animation: "fade-in 250ms ease-out both" }}>
+          <span className="lx-empty-mark" aria-hidden="true">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <circle cx="11" cy="11" r="7" />
+              <path d="M21 21l-4.3-4.3" />
+            </svg>
+          </span>
           <div>
-            <strong>No results found.</strong>
-            <p className="hint">Nothing on the shelf matches “{query}”{activeTags.length ? " with those filters" : ""}. Try a shorter word or clear the filters.</p>
+            <strong>No results found</strong>
+            <p className="hint">Adjust your search to try again.</p>
           </div>
           <button className="button-secondary" type="button" onClick={() => { setQuery(""); setActiveTags([]); }}>
-            <SearchX size={14} /> Reset search
+            Reset search
           </button>
         </div>
       )}
@@ -306,14 +323,5 @@ export function LibraryExplorer({ initialPhase }: { initialPhase?: string }) {
       {hasMore && <div className="lx-sentinel" ref={sentinelRef} aria-hidden="true" />}
       {hasMore && <p className="hint" style={{ textAlign: "center" }}>Loading more of {results.length - visibleCount} remaining…</p>}
     </section>
-  );
-}
-
-function SearchGlyph() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-      <circle cx="11" cy="11" r="7" />
-      <path d="m20 20-3.5-3.5" strokeLinecap="round" />
-    </svg>
   );
 }
