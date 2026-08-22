@@ -90,8 +90,8 @@ export function TodayView() {
             phaseProgress={overall.percent}
           />
           <div className="geometry-caption" style={{ maxWidth: 400, margin: "10px auto 0" }}>
-            <span>move the cursor — the fluid core reveals</span>
-            <span>engraved chart · local render</span>
+            <span>move the cursor — you orbit the core</span>
+            <span>lensed accretion · local render</span>
           </div>
         </div>
       </div>
