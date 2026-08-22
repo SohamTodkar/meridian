@@ -7,7 +7,7 @@ import { RiveFrame } from "@/components/rive/rive-frame";
 import { ThinkingState, type ThinkingRow } from "@/components/research/ui/thinking-state";
 import { ToolChips, type SourceChip, type ToolRow } from "@/components/research/ui/tool-chips";
 import { ContextCards, type ContextChunk } from "@/components/research/ui/context-cards";
-import { StreamingText, type AnswerSource } from "@/components/research/ui/streaming-text";
+import { StreamingText, type AnswerPoint, type AnswerSource } from "@/components/research/ui/streaming-text";
 import { RecommendationCard, type CardOption } from "@/components/research/ui/recommendation-card";
 import { SelectionActions } from "@/components/research/ui/selection-actions";
 import { PromptBar } from "@/components/research/ui/prompt-bar";
@@ -20,21 +20,24 @@ import { ResearchHistory, type HistoryEntry, type SavedSource } from "@/componen
  *   PromptBar        the query composer (@ sources, / commands, depth)
  *   ThinkingState    "Searching the web" while Exa is in flight, then the
  *                    real source trace settles open
+ *   StreamingText    THE SUMMARY FIRST — a cited lead paragraph streams,
+ *                    then the key points surface as a headed list, each
+ *                    point carrying its source chip (+n corroborations)
  *   ToolChips        the pipeline rows — Exa discovery, Firecrawl
- *                    extractions as they complete, synthesis — each row
- *                    expandable, each source chip previewable
+ *                    extractions as they complete, synthesis
  *   ContextCards     the extracted chunks, counted and linked
- *   StreamingText    the answer composed from the strongest highlights,
- *                    cited inline, with follow-ups
  *   Recommendation   real next actions (open strongest source, extract the
  *                    rest, save sources locally)
  *   SelectionActions on the answer's key claim — Explain fires a real child
  *                    research turn; the rest are honest local transforms
  *
+ * The answer streams from search highlights immediately; full extraction
+ * runs alongside it and feeds the sources stage that follows the summary.
+ *
  * History and saved sources persist in this browser only.
  */
 
-type TurnPhase = "thinking" | "searched" | "extracting" | "extracted" | "answering" | "done" | "error";
+type TurnPhase = "thinking" | "searched" | "answering" | "done" | "error";
 
 interface TurnResult {
   title: string;
@@ -53,9 +56,9 @@ interface Turn {
   results: TurnResult[];
   extractions: Record<string, string>;
   extractingUrls: string[];
-  answer: string;
+  lead: string;
   citeAfter: number;
-  answerSource?: AnswerSource;
+  points: AnswerPoint[];
   followUps: string[];
   error?: string;
 }
@@ -103,8 +106,40 @@ function firstSentence(text: string): string {
   return text.split(/(?<=[.!?])\s/)[0] ?? text;
 }
 
-/** Compose the structured answer from the strongest highlights. */
-function synthesize(query: string, results: TurnResult[]): { answer: string; citeAfter: number; followUps: string[] } {
+/** Topic words appear in every source of a query — they never corroborate a specific point. */
+const CORROBORATION_STOP = new Set([
+  "learning", "machine", "training", "because", "between", "through", "should", "would", "another",
+  "important", "general", "different", "example", "examples", "concept", "concepts", "beginner",
+  "beginners", "fundamental", "fundamentals", "understanding", "algorithm", "algorithms", "practice",
+  "practical", "computer", "programs", "systems", "sources", "results",
+]);
+
+/** How many other sources echo this point (share ≥2 specific words)? */
+function corroborations(text: string, selfUrl: string, results: TurnResult[]): number {
+  const words = new Set(
+    text.toLowerCase().split(/[^a-z]+/).filter((word) => word.length >= 6 && !CORROBORATION_STOP.has(word)),
+  );
+  if (words.size === 0) return 0;
+  let count = 0;
+  for (const other of results) {
+    if (other.url === selfUrl) continue;
+    const haystack = `${other.title} ${other.highlights[0] ?? ""}`.toLowerCase();
+    let hits = 0;
+    for (const word of words) if (haystack.includes(word)) hits += 1;
+    if (hits >= 2) count += 1;
+  }
+  return Math.min(count, 2);
+}
+
+/** A numbered highlight ("1. … 2. …") becomes one point per item; prose becomes its first sentence. */
+function pointsFromHighlight(highlight: string): string[] {
+  const numbered = highlight.split(/\s*\d+[\.)]\s+/).map((part) => part.trim()).filter((part) => part.length > 30);
+  if (numbered.length >= 2) return numbered.slice(0, 3).map((part) => trimWords(part, 150));
+  return [trimWords(firstSentence(highlight) || highlight, 150)];
+}
+
+/** Compose the structured summary: a cited lead paragraph, then key points each backed by a source. */
+function synthesize(query: string, results: TurnResult[]): { lead: string; citeAfter: number; points: AnswerPoint[]; followUps: string[] } {
   // Rank by the cleanest (post-scrub) highlight, not the raw one.
   const cleaned = results.map((result) => ({
     ...result,
@@ -114,11 +149,33 @@ function synthesize(query: string, results: TurnResult[]): { answer: string; cit
   const primary = ranked.find((result) => result.highlights.length > 0) ?? ranked[0];
   const secondary = ranked.find((result) => result !== primary && result.highlights.length > 0);
 
-  const lead = `Across ${results.length} sources, the strongest signal on “${trimWords(query, 60)}”:`;
   const h1 = primary?.highlights[0] ? trimWords(primary.highlights[0], 240) : primary ? trimWords(primary.title, 160) : "";
-  const h2 = secondary?.highlights[0] ? ` A second source agrees: ${trimWords(secondary.highlights[0], 160)}` : "";
+  const h2 = secondary?.highlights[0] ? ` A second source agrees: ${trimWords(secondary.highlights[0], 150)}` : "";
+  const lead = `Across ${results.length} sources on “${trimWords(query, 60)}”, the strongest signal: ${h1}.${h2}`.replace(/\.{2,}$/, ".");
+  // StreamingText indexes by word+separator tokens — count in the same units so the chip lands at the end.
+  const citeAfter = lead.split(/(\s+)/).filter((token) => token.length > 0).length;
 
-  const citeAfter = `${lead} ${h1}`.split(/\s+/).length;
+  const points: AnswerPoint[] = [];
+  const seen = new Set<string>([h1.slice(0, 48).toLowerCase()]);
+  for (const result of ranked) {
+    const highlight = result.highlights[0];
+    if (!highlight || points.length >= 6) continue;
+    const source: AnswerSource = { name: trimWords(result.title, 40), domain: domainOf(result.url), href: result.url };
+    for (const candidate of pointsFromHighlight(highlight)) {
+      if (points.length >= 6) break;
+      const key = candidate.slice(0, 48).toLowerCase();
+      if (key.length < 20 || seen.has(key)) continue;
+      seen.add(key);
+      points.push({ text: candidate, source, more: corroborations(candidate, result.url, ranked) });
+    }
+  }
+  if (points.length === 0 && primary) {
+    points.push({
+      text: trimWords(stripLeadingBoilerplate(primary.title), 150),
+      source: { name: trimWords(primary.title, 40), domain: domainOf(primary.url), href: primary.url },
+      more: 0,
+    });
+  }
 
   const followUps = [
     `${trimWords(query, 50)} — recent developments`,
@@ -126,7 +183,7 @@ function synthesize(query: string, results: TurnResult[]): { answer: string; cit
     ...(primary ? [`${trimWords(primary.title, 60)} — go deeper`] : []),
   ].slice(0, 3);
 
-  return { answer: `${lead} ${h1}.${h2}`, citeAfter, followUps };
+  return { lead, citeAfter, points, followUps };
 }
 
 export function ResearchView() {
@@ -174,12 +231,19 @@ export function ResearchView() {
     );
   }, []);
 
+  /** Fire-and-watch full extraction of the top sources — runs alongside the streaming summary. */
   const extractTop = useCallback(async (id: number, results: TurnResult[]) => {
-    const targets = results.slice(0, MAX_EXTRACT);
-    patchTurn(id, { phase: "extracting", extractingUrls: targets.map((result) => result.url) });
+    const targets = results.slice(0, MAX_EXTRACT).filter((result) => result.markdown === null);
+    patchTurn(id, { extractingUrls: targets.map((result) => result.url) });
+    if (targets.length === 0) return;
 
     await Promise.all(
       targets.map(async (result) => {
+        const finish = (markdown: string | null) =>
+          patchTurn(id, (turn) => ({
+            results: turn.results.map((entry) => (entry.url === result.url ? { ...entry, markdown } : entry)),
+            extractingUrls: turn.extractingUrls.filter((url) => url !== result.url),
+          }));
         try {
           const response = await fetch("/api/research/scrape", {
             method: "POST",
@@ -187,35 +251,19 @@ export function ResearchView() {
             body: JSON.stringify({ url: result.url, formats: ["markdown"] }),
           });
           const payload = (await response.json()) as { data?: { markdown: string } };
-          const markdown = payload.data?.markdown ?? null;
-          patchTurn(id, (turn) => ({
-            results: turn.results.map((entry) => (entry.url === result.url ? { ...entry, markdown } : entry)),
-          }));
+          finish(payload.data?.markdown ?? null);
         } catch {
-          patchTurn(id, (turn) => ({
-            results: turn.results.map((entry) => (entry.url === result.url ? { ...entry, markdown: null } : entry)),
-          }));
+          finish(null);
         }
       }),
     );
-
-    // Let the tool rows settle a beat, then stream the answer.
-    window.setTimeout(() => {
-      patchTurn(id, (turn) => {
-        const synthesis = synthesize(turn.query, turn.results);
-        const primary = [...turn.results].sort(
-          (a, b) => (b.highlights[0]?.length ?? 0) - (a.highlights[0]?.length ?? 0),
-        )[0];
-        return {
-          phase: "answering",
-          ...synthesis,
-          answerSource: primary
-            ? { name: trimWords(primary.title, 40), domain: domainOf(primary.url), href: primary.url }
-            : undefined,
-        };
-      });
-    }, 900);
   }, [patchTurn]);
+
+  /** The summary streams from search highlights immediately; extraction feeds the sources stage after it. */
+  const startAnswer = useCallback((id: number, results: TurnResult[]) => {
+    patchTurn(id, (turn) => ({ phase: "answering", ...synthesize(turn.query, results) }));
+    void extractTop(id, results);
+  }, [patchTurn, extractTop]);
 
   const runTurn = useCallback(async (query: string, deep: boolean) => {
     setBusy(true);
@@ -228,8 +276,9 @@ export function ResearchView() {
       results: [],
       extractions: {},
       extractingUrls: [],
-      answer: "",
+      lead: "",
       citeAfter: 0,
+      points: [],
       followUps: [],
     };
     setTurns((current) => [...current, turn]);
@@ -263,18 +312,14 @@ export function ResearchView() {
         markdown: result.markdown ?? null,
       }));
       patchTurn(id, { phase: "searched", results });
-
-      if (deep) {
-        // Combined already extracted — settle the trace, then answer.
-        window.setTimeout(() => extractTop(id, results), 400);
-      }
-      // Standard flow waits for ThinkingState's onSettled to start extraction.
+      // Both depths funnel through ThinkingState's onSettled → startAnswer:
+      // the summary streams from highlights while extraction runs alongside.
     } catch (requestError) {
       patchTurn(id, { phase: "error", error: `Could not reach the research pipeline: ${(requestError as Error).message}` });
     } finally {
       setBusy(false);
     }
-  }, [patchTurn, extractTop]);
+  }, [patchTurn]);
 
   /* ---- derived per-turn view models ---------------------------------- */
 
@@ -322,7 +367,7 @@ export function ResearchView() {
           : [{ text: "rendering sources as markdown…" }],
       });
     }
-    if (turn.phase === "answering" || turn.phase === "done") {
+    if (turn.phase === "done") {
       rows.push({
         icon: "run",
         label: "Synthesis",
@@ -330,7 +375,7 @@ export function ResearchView() {
         mono: true,
         detailMono: false,
         detail: [
-          { text: "Composed from the strongest highlights, cited inline." },
+          { text: "Summary streamed from the strongest highlights, points cited per source." },
           { text: `${turn.results.length} sources considered · ${extracted.length} read in full.` },
         ],
       });
@@ -450,6 +495,9 @@ export function ResearchView() {
     return trimWords(firstSentence(claim) || claim, 180);
   };
 
+  const answerTextOf = (turn: Turn): string =>
+    [turn.lead, ...turn.points.map((point) => `• ${point.text} — ${point.source.domain}`)].join("\n\n");
+
   return (
     <div className="content">
       <div className="research-head">
@@ -458,8 +506,8 @@ export function ResearchView() {
           <KineticText as="span" trigger="view">Search the living web.</KineticText>
         </h1>
         <p className="page-intro">
-          Every answer is staged and structured: the search trace, the extraction pipeline, the retrieved chunks, then a
-          cited synthesis you can interrogate.
+          Every answer is staged and structured: the search trace, a cited summary with the key points spelled out,
+          then the extraction pipeline, the retrieved chunks, and what to do next.
         </p>
         <div className="research-note">
           <FlaskConical size={14} aria-hidden="true" />
@@ -502,56 +550,52 @@ export function ResearchView() {
                   rows={thinkingRows(turn)}
                   working={turn.phase === "thinking"}
                   onSettled={() => {
-                    if (!turn.deep && turn.phase === "searched") void extractTop(turn.id, turn.results);
+                    if (turn.phase === "searched") startAnswer(turn.id, turn.results);
                   }}
                 />
 
-                {turn.phase !== "thinking" && turn.phase !== "searched" && (
-                  <ToolChips
-                    rows={toolRows(turn)}
-                    chips={sourceChips(turn)}
-                    summary={`${toolRows(turn).length} steps · ${turn.results.length} sources`}
-                    running={turn.phase === "extracting"}
+                {/* the summary — cited lead paragraph streams, then the key points list */}
+                {(turn.phase === "answering" || turn.phase === "done") && turn.lead && (
+                  <StreamingText
+                    lead={turn.lead}
+                    citeAfter={turn.citeAfter}
+                    points={turn.points}
+                    sourcesCount={turn.results.length}
+                    followUps={turn.followUps}
+                    onFollowUp={(followUp) => void runTurn(followUp, false)}
+                    onCopy={() => void navigator.clipboard?.writeText(answerTextOf(turn)).catch(() => {})}
+                    onRetry={() => void runTurn(turn.query, turn.deep)}
+                    onSources={() => {
+                      const first = turn.results.find((result) => result.url)?.url;
+                      if (first) window.open(first, "_blank", "noreferrer");
+                    }}
+                    onSettled={() => patchTurn(turn.id, { phase: "done" })}
                   />
                 )}
 
-                {(turn.phase === "extracted" || turn.phase === "answering" || turn.phase === "done") && (
-                  <ContextCards chunks={chunks(turn)} total={turn.results.length} />
-                )}
-
-                {(turn.phase === "answering" || turn.phase === "done") && turn.answer && (
-                  <>
-                    <StreamingText
-                      answer={turn.answer}
-                      citeAfter={turn.citeAfter}
-                      source={turn.answerSource}
-                      sourcesCount={turn.results.length}
-                      followUps={turn.followUps}
-                      onFollowUp={(followUp) => void runTurn(followUp, false)}
-                      onCopy={() => void navigator.clipboard?.writeText(turn.answer).catch(() => {})}
-                      onRetry={() => void runTurn(turn.query, turn.deep)}
-                      onSources={() => {
-                        const first = turn.results.find((result) => result.url)?.url;
-                        if (first) window.open(first, "_blank", "noreferrer");
-                      }}
-                      onSettled={() => patchTurn(turn.id, { phase: "done" })}
+                {/* then the sources — pipeline, extracted chunks, and what to do next */}
+                {turn.phase === "done" && (
+                  <div className="flex flex-col gap-5" style={{ animation: "fade-up 400ms cubic-bezier(0.23,1,0.32,1) both" }}>
+                    <ToolChips
+                      rows={toolRows(turn)}
+                      chips={sourceChips(turn)}
+                      summary={`${toolRows(turn).length} steps · ${turn.results.length} sources`}
+                      running={turn.extractingUrls.length > 0}
                     />
-
-                    {turn.phase === "done" && (
-                      <div className="flex flex-col gap-5" style={{ animation: "fade-up 400ms cubic-bezier(0.23,1,0.32,1) both" }}>
-                        <RecommendationCard
-                          question="Where should this answer go next?"
-                          options={recommendationOptions(turn)}
-                          onConfirm={(option) => onConfirmRecommendation(turn, option)}
-                        />
-                        <SelectionActions
-                          claim={claimOf(turn)}
-                          onExplain={(selection) => void runTurn(selection, false)}
-                          onInstruct={(instruction, selection) => void runTurn(`${instruction}: ${selection}`, false)}
-                        />
-                      </div>
+                    {turn.results.some((result) => result.markdown) && (
+                      <ContextCards chunks={chunks(turn)} total={turn.results.length} />
                     )}
-                  </>
+                    <RecommendationCard
+                      question="Where should this answer go next?"
+                      options={recommendationOptions(turn)}
+                      onConfirm={(option) => onConfirmRecommendation(turn, option)}
+                    />
+                    <SelectionActions
+                      claim={claimOf(turn)}
+                      onExplain={(selection) => void runTurn(selection, false)}
+                      onInstruct={(instruction, selection) => void runTurn(`${instruction}: ${selection}`, false)}
+                    />
+                  </div>
                 )}
               </>
             )}

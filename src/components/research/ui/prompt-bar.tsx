@@ -247,8 +247,14 @@ export function PromptBar({
         {menu && (
           <div
             onMouseLeave={() => setEngaged(false)}
-            className="absolute inset-x-0 bottom-full z-10 mb-2 rounded-[10px] bg-surface p-1 shadow-raised"
-            style={{ animation: "pop-in 180ms cubic-bezier(0.23,1,0.32,1) both", transformOrigin: "bottom center" }}
+            className="absolute inset-x-0 bottom-full z-30 mb-2 rounded-[10px] p-1 shadow-raised"
+            style={{
+              backgroundColor: "#0e1012",
+              border: "1px solid var(--color-line-strong)",
+              boxShadow: "0 12px 32px rgba(0,0,0,.55), 0 2px 8px rgba(0,0,0,.4)",
+              animation: "pop-in 180ms cubic-bezier(0.23,1,0.32,1) both",
+              transformOrigin: "bottom center",
+            }}
             data-lenis-prevent
           >
             <span
@@ -301,8 +307,16 @@ export function PromptBar({
         {depthOpen && (
           <div
             onMouseLeave={() => setDepthHovered(null)}
-            className="absolute z-10 w-44 rounded-[10px] bg-surface p-1 shadow-raised"
-            style={{ left: depthMenuLeft, bottom: depthMenuBottom, animation: "pop-in 180ms cubic-bezier(0.23,1,0.32,1) both", transformOrigin: "bottom left" }}
+            className="absolute z-30 w-44 rounded-[10px] p-1 shadow-raised"
+            style={{
+              left: depthMenuLeft,
+              bottom: depthMenuBottom,
+              backgroundColor: "#0e1012",
+              border: "1px solid var(--color-line-strong)",
+              boxShadow: "0 12px 32px rgba(0,0,0,.55), 0 2px 8px rgba(0,0,0,.4)",
+              animation: "pop-in 180ms cubic-bezier(0.23,1,0.32,1) both",
+              transformOrigin: "bottom left",
+            }}
           >
             <span
               aria-hidden

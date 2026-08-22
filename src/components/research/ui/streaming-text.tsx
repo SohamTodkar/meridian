@@ -4,9 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { StreamText } from "@/components/atoms/StreamText";
 
 /**
- * STREAMING TEXT — the answer resolves word by word, the top-source chip
- * cites inline, actions and follow-ups unlock once the stream lands
- * (adapted from the gallery kit; tokens, sources and follow-ups are live).
+ * STREAMING TEXT — the summary resolves word by word with the top source
+ * cited inline, then the key points surface as a headed list, each point
+ * carrying the chip of the source it came from (plus "+n" when other
+ * sources corroborate it). Actions and follow-ups unlock once the whole
+ * answer has landed.
  */
 
 export type AnswerSource = {
@@ -15,10 +17,33 @@ export type AnswerSource = {
   href: string;
 };
 
+export type AnswerPoint = {
+  text: string;
+  source: AnswerSource;
+  more?: number;
+};
+
+const SourceChip = ({ source, more, subtle = false }: { source: AnswerSource; more?: number; subtle?: boolean }) => (
+  <a
+    href={source.href}
+    target="_blank"
+    rel="noreferrer"
+    className={`inline-flex h-4.5 translate-y-[-1px] items-center gap-1 rounded-[5px] bg-inset px-[3px] align-middle font-mono text-[10.5px] shadow-hairline transition-colors duration-150 hover:bg-hover ${
+      subtle ? "text-ink-3 hover:text-ink-2" : "text-ink-2 hover:text-ink"
+    }`}
+  >
+    <span className="flex size-3 items-center justify-center rounded-[3px] bg-accent text-[7px] font-bold text-canvas">
+      {source.domain.slice(0, 1).toUpperCase()}
+    </span>
+    <span>{source.domain}</span>
+    {more ? <span className="text-ink-3">+{more}</span> : null}
+  </a>
+);
+
 export function StreamingText({
-  answer,
+  lead,
   citeAfter,
-  source,
+  points,
   sourcesCount,
   followUps,
   onFollowUp,
@@ -28,9 +53,9 @@ export function StreamingText({
   onSettled,
   fill = true,
 }: {
-  answer: string;
+  lead: string;
   citeAfter: number;
-  source?: AnswerSource;
+  points: AnswerPoint[];
   sourcesCount: number;
   followUps: string[];
   onFollowUp: (query: string) => void;
@@ -48,9 +73,9 @@ export function StreamingText({
   }, [onSettled]);
 
   // Reset when a new answer arrives — adjusted during render, not in an effect.
-  const [lastAnswer, setLastAnswer] = useState(answer);
-  if (lastAnswer !== answer) {
-    setLastAnswer(answer);
+  const [lastLead, setLastLead] = useState(lead);
+  if (lastLead !== lead) {
+    setLastLead(lead);
     setDone(false);
   }
 
@@ -61,10 +86,13 @@ export function StreamingText({
 
   const settle = () => setDone(true);
 
-  const words = answer.split(/(\s+)/).filter((token) => token.length > 0);
+  const words = lead.split(/(\s+)/).filter((token) => token.length > 0);
   const citeIndex = Math.min(citeAfter, words.length - 1);
   const before = words.slice(0, citeIndex).join("");
   const after = words.slice(citeIndex).join("");
+
+  // Points cascade after the lead lands; later rows wait for the cascade.
+  const cascade = points.length * 130 + 350;
 
   const actions: Array<{ key: string; label: string; onClick?: () => void }> = [
     { key: "copy", label: copied ? "Copied" : "Copy answer", onClick: () => { onCopy(); setCopied(true); window.setTimeout(() => setCopied(false), 1600); } },
@@ -75,21 +103,13 @@ export function StreamingText({
 
   return (
     <div className={fill ? "w-full" : "w-full max-w-95"}>
-      <p className="text-[13.5px] leading-relaxed text-ink">
+      {/* summary paragraph — streams with the primary source cited inline */}
+      <p className="text-[13.5px] leading-[1.65] text-ink">
         {before}
-        {source && (
-          <a
-            href={source.href}
-            target="_blank"
-            rel="noreferrer"
-            className="ml-0 mr-1 inline-flex h-4.5 translate-y-[-1px] items-center gap-1 rounded-[5px] bg-inset pr-[3px] pl-[3px] align-middle font-mono text-[10.5px] text-ink-2 shadow-hairline transition-colors duration-150 hover:bg-hover hover:text-ink"
-            style={{ animation: "pop-in 250ms cubic-bezier(0.23,1,0.32,1) both" }}
-          >
-            <span className="flex size-3 items-center justify-center rounded-[3px] bg-accent text-[7px] font-bold text-canvas">
-              {source.domain.slice(0, 1).toUpperCase()}
-            </span>
-            <span>{source.domain}</span>
-          </a>
+        {points[0]?.source && (
+          <span className="mr-1 inline-flex" style={{ animation: "pop-in 250ms cubic-bezier(0.23,1,0.32,1) both" }}>
+            <SourceChip source={points[0].source} />
+          </span>
         )}
         {!done ? (
           <StreamText text={after} onDone={settle} className="inline" />
@@ -98,10 +118,49 @@ export function StreamingText({
         )}
       </p>
 
+      {/* key points — the headed list each source backs */}
+      {points.length > 1 && (
+        <div
+          className="mt-3.5 transition-opacity duration-400"
+          style={{ opacity: done ? 1 : 0 }}
+        >
+          <p className="text-[12px] font-medium text-ink-2" style={{ marginBottom: 2 }}>
+            Key points across the sources
+          </p>
+          <div className="flex flex-col">
+            {points.map((point, i) => (
+              <div
+                key={`${point.source.href}-${i}`}
+                className="-mx-1.5 flex items-start gap-2.5 rounded-[7px] border-b border-line px-1.5 py-2"
+                style={done ? { animation: `fade-up 350ms cubic-bezier(0.23,1,0.32,1) ${i * 130}ms both` } : { opacity: 0 }}
+              >
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--color-ink-3)"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  className="mt-[5px] shrink-0"
+                  aria-hidden="true"
+                >
+                  <path d="M5 12h14" />
+                </svg>
+                <span className="flex-1 text-[13px] leading-[1.55] text-ink-2">{point.text}</span>
+                <span className="mt-[2px] shrink-0 whitespace-nowrap">
+                  <SourceChip source={point.source} more={point.more} subtle />
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* action icons row */}
       <div
         className="mt-2 flex items-center gap-0.5 transition-opacity duration-400"
-        style={{ opacity: done ? 1 : 0, pointerEvents: done ? "auto" : "none" }}
+        style={{ opacity: done ? 1 : 0, pointerEvents: done ? "auto" : "none", transitionDelay: `${cascade}ms` }}
       >
         {actions.map((action) => (
           <button
@@ -141,7 +200,7 @@ export function StreamingText({
       {/* follow-ups */}
       <div
         className="mt-2.5 transition-opacity duration-400"
-        style={{ opacity: done ? 1 : 0, pointerEvents: done ? "auto" : "none" }}
+        style={{ opacity: done ? 1 : 0, pointerEvents: done ? "auto" : "none", transitionDelay: `${cascade}ms` }}
       >
         <p className="text-[12px] font-medium text-ink-2">Follow-ups</p>
         <div className="mt-0.5 flex flex-col">
@@ -151,7 +210,7 @@ export function StreamingText({
               type="button"
               onClick={() => onFollowUp(text)}
               className="-mx-1.5 flex items-center gap-2 rounded-[7px] border-b border-line px-1.5 py-1.5 text-left text-[12.5px] text-ink transition-colors duration-100 hover:bg-hover-2"
-              style={done ? { animation: `fade-up 350ms cubic-bezier(0.23,1,0.32,1) ${i * 90}ms both` } : { opacity: 0 }}
+              style={done ? { animation: `fade-up 350ms cubic-bezier(0.23,1,0.32,1) ${cascade + i * 90}ms both` } : { opacity: 0 }}
             >
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--color-ink-3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                 <path d="M9 10l-5 5 5 5" />
