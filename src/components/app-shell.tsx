@@ -1,14 +1,32 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react";
+import { useRouter, usePathname } from "next/navigation";
+import {
+  BookOpen,
+  Brain,
+  CalendarCheck,
+  Compass,
+  FileText,
+  Home,
+  Layers,
+  Menu,
+  Route,
+  Search,
+  Settings2,
+  ShieldHalf,
+  Timer,
+  Trophy,
+  X,
+} from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { model } from "@/data";
-import { getActivePhase, getOverallProgress, getStreak, getWeekMinutes } from "@/state/selectors";
+import { getLocalDateKey } from "@/state/date";
+import { getActivePhase, getDueRetrievalPrompts, getOverallProgress, getStreak, getWeekMinutes } from "@/state/selectors";
 import { rehydrateMeridian, useMeridianStore } from "@/state/store";
 import { preloadVisualAssets } from "@/lib/assets";
 import { whenIdle } from "@/lib/utils";
+import { SidebarNav, type NavSection } from "@/components/shell/sidebar-nav";
 import { CommandPalette } from "./command-palette";
 import { Onboarding } from "./onboarding";
 
@@ -30,64 +48,44 @@ function titleForPath(pathname: string): string {
   return "Today";
 }
 
-/** The full register, numbered like an instrument's channel strip. */
-const RAIL_SECTIONS: Array<{
-  group: string;
-  items: Array<{ label: string; href: string; prefix: string }>;
-}> = [
-  {
-    group: "Workspace",
-    items: [
-      { label: "Today", href: "/", prefix: "01" },
-      { label: "Learning path", href: "/path", prefix: "02" },
-      { label: "Settings", href: "/settings", prefix: "03" },
-    ],
-  },
-  {
-    group: "Practice",
-    items: [
-      { label: "Rhythm", href: "/rhythm", prefix: "04" },
-      { label: "DSA track", href: "/dsa", prefix: "05" },
-      { label: "Recall", href: "/recall", prefix: "06" },
-      { label: "First 7 days", href: "/first-seven-days", prefix: "07" },
-    ],
-  },
-  {
-    group: "Record",
-    items: [
-      { label: "Journal", href: "/journal", prefix: "08" },
-      { label: "Weekly review", href: "/review", prefix: "09" },
-      { label: "Portfolio", href: "/portfolio", prefix: "10" },
-    ],
-  },
-  {
-    group: "Reference",
-    items: [
-      { label: "Library & network", href: "/library", prefix: "11" },
-      { label: "Research desk", href: "/research", prefix: "12" },
-      { label: "Safety net", href: "/safety-net", prefix: "13" },
-    ],
-  },
+/** The full register — primary items render as icon rows, all are searchable. */
+const SECTIONS: NavSection[] = [
+  { key: "today", label: "Today", href: "/", icon: <Home size={16} />, primary: true },
+  { key: "path", label: "Learning path", href: "/path", icon: <Route size={16} />, primary: true },
+  { key: "research", label: "Research desk", href: "/research", icon: <Search size={16} />, primary: true },
+  { key: "settings", label: "Settings", href: "/settings", icon: <Settings2 size={16} />, primary: true },
+  { key: "rhythm", label: "Rhythm", href: "/rhythm", icon: <Timer size={16} /> },
+  { key: "dsa", label: "DSA track", href: "/dsa", icon: <Layers size={16} /> },
+  { key: "recall", label: "Recall", href: "/recall", icon: <Brain size={16} /> },
+  { key: "first7", label: "First 7 days", href: "/first-seven-days", icon: <CalendarCheck size={16} /> },
+  { key: "journal", label: "Journal", href: "/journal", icon: <FileText size={16} /> },
+  { key: "review", label: "Weekly review", href: "/review", icon: <Compass size={16} /> },
+  { key: "portfolio", label: "Portfolio", href: "/portfolio", icon: <Trophy size={16} /> },
+  { key: "library", label: "Library & network", href: "/library", icon: <BookOpen size={16} /> },
+  { key: "safety", label: "Safety net", href: "/safety-net", icon: <ShieldHalf size={16} /> },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const pathname = usePathname();
-  const [railOpen, setRailOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const hydrated = useMeridianStore((state) => state.hydrated);
   const setHydrated = useMeridianStore((store) => store.setHydrated);
   const scheduleMode = useMeridianStore((state) => state.settings.scheduleMode);
   const setScheduleMode = useMeridianStore((store) => store.setScheduleMode);
-  // Subscribe to exactly the slices the rail derives from, then compute from
-  // a single snapshot — no whole-store subscription, no stale progress.
+  // Subscribe to exactly the slices the chrome derives from, then compute
+  // from a single snapshot — no whole-store subscription, no stale progress.
   useMeridianStore((state) => state.sessions);
   useMeridianStore((state) => state.checks);
   useMeridianStore((state) => state.dailyLogs);
   useMeridianStore((state) => state.progressionOverrides);
+  useMeridianStore((state) => state.retrievalPrompts);
   const state = useMeridianStore.getState();
   const activePhase = getActivePhase(model, state);
   const overall = getOverallProgress(model, state);
   const streak = getStreak(state);
   const weekMinutes = getWeekMinutes(state);
+  const dueRecall = getDueRetrievalPrompts(state, getLocalDateKey(new Date(), state.settings.timeZone)).length;
 
   useEffect(() => {
     rehydrateMeridian();
@@ -99,10 +97,9 @@ export function AppShell({ children }: { children: ReactNode }) {
     };
   }, [setHydrated]);
 
-  // Close the mobile rail whenever the route changes (deferred to avoid a
-  // synchronous cascade inside the effect).
+  // Close the mobile overlay whenever the route changes.
   useEffect(() => {
-    const frame = requestAnimationFrame(() => setRailOpen(false));
+    const frame = requestAnimationFrame(() => setMobileNavOpen(false));
     return () => cancelAnimationFrame(frame);
   }, [pathname]);
 
@@ -119,52 +116,51 @@ export function AppShell({ children }: { children: ReactNode }) {
     );
   }
 
-  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
+  const navigate = (href: string) => router.push(href);
+
+  const sidebar = (
+    <SidebarNav
+      sections={SECTIONS}
+      activeHref={pathname}
+      onNavigate={navigate}
+      counts={{ recall: dueRecall > 0 ? String(dueRecall) : undefined }}
+      progress={{
+        phaseNumber: activePhase.identity.number + 1,
+        completed: overall.completed,
+        total: overall.total,
+        percent: overall.percent,
+        name: activePhase.identity.northstarName,
+      }}
+      fill
+    />
+  );
 
   return (
     <div className="app-shell">
       <a className="skip-link" href="#main-content">Skip to main content</a>
-      {/* data-lenis-prevent keeps wheel scrolling native inside the rail so
-          the smooth-scroll engine never steals the sidebar's mouse wheel. */}
-      <aside className={`rail ${railOpen ? "open" : ""}`} aria-label="Primary navigation" data-lenis-prevent>
-        <div>
-          <div className="brand">
-            <span className="brand-mark" aria-hidden="true">M</span>
-            <span className="brand-name">Meridian</span>
-          </div>
-          {RAIL_SECTIONS.map((section) => (
-            <div className="rail-group" key={section.group}>
-              <div className="eyebrow">{section.group}</div>
-              <nav className="rail-nav" aria-label={section.group}>
-                {section.items.map((item) => (
-                  <Link className={`rail-link ${isActive(item.href) ? "active" : ""}`} href={item.href} key={item.href}>
-                    <span className="rail-index" aria-hidden="true">{item.prefix}</span>
-                    <span>{item.label}</span>
-                  </Link>
-                ))}
-              </nav>
-            </div>
-          ))}
-          <div className="rail-progress">
-            <div className="rail-progress-row eyebrow"><span>Phase {activePhase.identity.number + 1} · {overall.percent}%</span></div>
-            <strong className="rail-progress-value">{overall.completed}<span className="muted">/{overall.total}</span></strong>
-            <div className="progress-line" style={{ marginTop: 13 }}><span style={{ width: `${overall.percent}%` }} /></div>
-            <p className="muted" style={{ fontSize: 12, margin: "13px 0 0" }}>{activePhase.identity.northstarName}</p>
+      {/* data-lenis-prevent keeps wheel scrolling native inside the rail. */}
+      <div className="rail desktop-rail" data-lenis-prevent>
+        {sidebar}
+      </div>
+      {mobileNavOpen && (
+        <div className="mobile-rail-host">
+          <div className="mobile-rail-backdrop" onClick={() => setMobileNavOpen(false)} aria-hidden="true" />
+          <div className="mobile-rail" data-lenis-prevent>
+            {sidebar}
           </div>
         </div>
-        <p className="privacy-note">Local only. <span aria-hidden="true">—</span> Your work stays on this device.</p>
-      </aside>
+      )}
       <main id="main-content" className="app-main" tabIndex={-1}>
         <header className="topbar">
           <div className="breadcrumb">
             <button
               className="mobile-menu"
               type="button"
-              aria-label={railOpen ? "Close navigation" : "Open navigation"}
-              aria-expanded={railOpen}
-              onClick={() => setRailOpen((open) => !open)}
+              aria-label={mobileNavOpen ? "Close navigation" : "Open navigation"}
+              aria-expanded={mobileNavOpen}
+              onClick={() => setMobileNavOpen((open) => !open)}
             >
-              {railOpen ? <X size={16} /> : <Menu size={16} />}
+              {mobileNavOpen ? <X size={16} /> : <Menu size={16} />}
             </button>
             <Link href="/">Meridian</Link>
             <span className="mono" aria-hidden="true" style={{ color: "var(--faint)" }}>/</span>

@@ -15,8 +15,9 @@ describe("sidebar navigation reachability", () => {
   });
 
   it("retains direct links to the lower navigation sections", () => {
-    // The rail register is data-driven; the entries below must stay reachable.
-    expect(shell).toContain('{ label: "Portfolio", href: "/portfolio"');
-    expect(shell).toContain('{ label: "Library & network", href: "/library"');
+    // The nav register is data-driven; the entries below must stay reachable.
+    expect(shell).toContain('label: "Portfolio", href: "/portfolio"');
+    expect(shell).toContain('label: "Library & network", href: "/library"');
+    expect(shell).toContain('label: "Research desk", href: "/research"');
   });
 });

@@ -143,22 +143,8 @@ kbd {
 }
 
 /* --------------------------------------------------------- shell ---- */
-
-.app-shell { display: grid; grid-template-columns: var(--rail) minmax(0,1fr); min-height: 100vh; }
-
-.rail {
-  position: sticky; top: 0; display: flex; height: 100vh; min-height: 0;
-  flex-direction: column; justify-content: flex-start;
-  overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
-  scrollbar-color: var(--ghost) transparent; scrollbar-width: thin;
-  border-right: 1px solid var(--rule);
-  background: rgba(13,15,16,.97); /* solid: no backdrop-filter in scroll paths */
-  padding: 26px 18px 20px;
-  z-index: var(--z-rail);
-}
-.rail > div, .rail > .privacy-note { flex-shrink: 0; }
-.rail::-webkit-scrollbar { width: 6px; }
-.rail::-webkit-scrollbar-thumb { border-radius: 999px; background: var(--ghost); }
+/* .app-shell and .rail are defined with the SidebarNav block at the end
+   of this file (flex layout + collapsible rail). */
 
 .brand { display: flex; align-items: center; gap: 11px; margin-bottom: 42px; }
 .brand-mark {
@@ -983,8 +969,7 @@ kbd {
 
 @media (max-width: 800px) {
   .app-shell { display: block; }
-  .rail { position: fixed; z-index: 100; display: none; width: min(86vw, 300px); border-right: 1px solid var(--rule-strong); }
-  .rail.open { display: flex; }
+  .desktop-rail { display: none; }
   .mobile-menu { display: inline-flex; }
   .topbar { min-height: 60px; padding: 0 18px; }
   .topbar-right .stat { display: none; }
@@ -1117,4 +1102,62 @@ kbd {
 .lx-empty-mark {
   display: flex; width: 32px; height: 32px; align-items: center; justify-content: center;
   border: 1px solid var(--rule); border-radius: 8px; background: var(--panel); color: var(--muted);
+}
+
+/* ============================================================================
+   SIDEBAR NAV — the collapsible workspace rail. Copy fades and slides on
+   collapse; rows shrink to icon tiles; the searchable section index and
+   progress block hide entirely. One glide pill handles hover state.
+   ============================================================================ */
+
+.app-shell { display: flex; min-height: 100vh; }
+
+.rail {
+  position: sticky; top: 0; height: 100vh;
+  display: block; flex-shrink: 0;
+  overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+  scrollbar-color: var(--ghost) transparent; scrollbar-width: thin;
+  border-right: 1px solid var(--rule);
+  background: rgba(13, 15, 16, 0.97);
+  z-index: var(--z-rail);
+}
+.rail::-webkit-scrollbar { width: 6px; }
+.rail::-webkit-scrollbar-thumb { border-radius: 999px; background: var(--ghost); }
+
+.sidebar-copy {
+  transition: opacity 180ms cubic-bezier(0.16, 1, 0.3, 1), transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-sidebar-collapsed="true"] .sidebar-copy {
+  opacity: 0;
+  transform: translateX(8px);
+  pointer-events: none;
+}
+[data-sidebar-collapsed="true"] .sidebar-workspace-control { opacity: 0; pointer-events: none; }
+[data-sidebar-collapsed="true"] .sidebar-row {
+  width: 36px; min-width: 36px; margin-left: 8px; padding: 0; justify-content: center;
+}
+[data-sidebar-collapsed="true"] .sidebar-only-expanded { display: none; }
+
+.sidebar-glide-highlight { left: 8px; right: 8px; }
+
+.sidebar-progress-track { height: 3px; border-radius: 999px; background: var(--rule); overflow: hidden; }
+.sidebar-progress-track > span { display: block; height: 100%; background: var(--bone); transition: width 300ms var(--ease-out-expo); }
+
+/* Mobile: the sidebar becomes a fixed overlay with a scrim. */
+.mobile-rail-backdrop {
+  position: fixed; inset: 0; z-index: 99;
+  background: rgba(0, 0, 0, 0.66);
+  animation: fade-in 200ms ease-out both;
+}
+.mobile-rail {
+  position: fixed; top: 0; bottom: 0; left: 0; z-index: 100;
+  width: min(86vw, 248px);
+  background: var(--panel);
+  border-right: 1px solid var(--rule-strong);
+  box-shadow: var(--shadow-overlay);
+  animation: fade-in 200ms ease-out both;
+}
+@media (min-width: 801px) {
+  .mobile-rail, .mobile-rail-backdrop { display: none; }
+  .mobile-rail-host { display: none; }
 }
