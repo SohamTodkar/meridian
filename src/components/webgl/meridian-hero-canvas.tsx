@@ -49,7 +49,9 @@ export function MeridianHeroCanvas({
 
     const reducedMotion = prefersReducedMotion();
 
-    const renderer = createMeridianRenderer(canvas);
+    // preserveDrawingBuffer keeps the frame readable so canvas screenshots
+    // and pixel probes work on every platform (negligible cost at 400px).
+    const renderer = createMeridianRenderer(canvas, { preserveDrawingBuffer: true });
     if (!renderer) {
       setFailed("webgl");
       return;

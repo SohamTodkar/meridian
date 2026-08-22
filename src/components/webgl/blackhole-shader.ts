@@ -41,9 +41,10 @@ export const blackholeFragmentShader = /* glsl */ `
 
   varying vec2 vUv;
 
-  const int STEPS = 120;
+  const int STEPS = 128;
   const float DISK_IN = 2.15;
   const float DISK_OUT = 7.6;
+  const float ESCAPE_R = 30.0;
 
   /* --- cheap value noise, streak-friendly ------------------------- */
   float hash(vec2 p) {
@@ -130,10 +131,11 @@ export const blackholeFragmentShader = /* glsl */ `
   }
 
   void main() {
-    // Primary ray through the pixel.
+    // Primary ray through the pixel. Three's lookAt basis aims the camera
+    // down its −Z axis, so the forward component here is −1.
     vec2 screen = (vUv * 2.0 - 1.0);
     screen.x *= uResolution.x / max(uResolution.y, 1.0);
-    vec3 dir = normalize(uCamMatrix * vec3(screen * uFov, 1.0));
+    vec3 dir = normalize(uCamMatrix * vec3(screen * uFov, -1.0));
     vec3 pos = uCamPos;
 
     // Conserved squared angular momentum about the hole.
@@ -150,10 +152,11 @@ export const blackholeFragmentShader = /* glsl */ `
       float r = sqrt(r2);
 
       if (r < 1.0) { captured = true; break; }          // event horizon
-      if (r > 42.0 && dot(pos, dir) > 0.0) { escaped = true; break; }
+      if (r > ESCAPE_R && dot(pos, dir) > 0.0) { escaped = true; break; }
 
-      // Adaptive step: fine near the hole, coarse far away.
-      float dt = 0.045 + 0.11 * clamp((r - 1.0) / 8.0, 0.0, 1.0);
+      // Adaptive step: fine near the hole, coarse far away (coarse enough
+      // that escaping rays reach the starfield within the step budget).
+      float dt = 0.045 + 0.21 * clamp((r - 1.0) / 6.0, 0.0, 1.0);
 
       // Geodesic bend (Schwarzschild, rs = 1).
       vec3 accel = -1.5 * h2 * pos / (r2 * r2 * r);

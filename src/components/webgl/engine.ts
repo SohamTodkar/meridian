@@ -13,13 +13,17 @@ export interface EngineHandles {
   dispose: () => void;
 }
 
-export function createMeridianRenderer(canvas: HTMLCanvasElement): THREE.WebGLRenderer | null {
+export function createMeridianRenderer(
+  canvas: HTMLCanvasElement,
+  options: { preserveDrawingBuffer?: boolean } = {},
+): THREE.WebGLRenderer | null {
   try {
     const renderer = new THREE.WebGLRenderer({
       canvas,
       alpha: true,
       antialias: true,
       powerPreference: "high-performance",
+      preserveDrawingBuffer: options.preserveDrawingBuffer ?? false,
     });
     renderer.setClearColor(0x000000, 0);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
