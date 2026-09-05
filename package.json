@@ -1,22 +1,28 @@
 {
   "name": "meridian",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "engines": {
-    "node": ">=20.9.0"
+    "node": ">=22.13.0"
   },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "preview": "node server.mjs",
+    "preview": "next start",
     "assets": "node scripts/generate-assets.mjs",
     "lint": "eslint",
     "extract": "node scripts/extract-data.cjs",
     "test": "vitest run --config vitest.config.mts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:migrate": "node scripts/migrate.mjs",
+    "setup:auth": "node scripts/setup-auth.mjs",
+    "build:vercel": "node scripts/deploy-build.mjs",
+    "test:api": "node scripts/test-api.mjs",
+    "format": "prettier --write src scripts database .github README.md"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "@rive-app/react-canvas": "^4.32.0",
     "framer-motion": "13.1.0",
     "fuse.js": "^7.5.0",
@@ -32,6 +38,7 @@
     "zustand": "5.0.15"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@eslint/eslintrc": "3.3.1",
     "@tailwindcss/postcss": "4.1.10",
     "@types/node": "20.19.30",
@@ -40,8 +47,10 @@
     "@types/three": "^0.185.4",
     "eslint": "9.22.0",
     "eslint-config-next": "16.3.0",
+    "prettier": "^3.9.6",
     "tailwindcss": "4.1.10",
     "typescript": "5.9.3",
     "vitest": "4.1.10"
-  }
+  },
+  "packageManager": "pnpm@11.19.0"
 }

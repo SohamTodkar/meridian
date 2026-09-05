@@ -53,3 +53,7 @@ next-env.d.ts
 
 # Keep the template committable even though .env* is ignored
 !.env.local.example
+!.env.example
+/.meridian/
+/test-results/
+/playwright-report/

@@ -1,7 +1,13 @@
 import { z } from "zod";
 import { searchWithExa, type ExaSearchResult } from "@/lib/services/exa";
-import { scrapeWithFirecrawl, type FirecrawlScrapeResult } from "@/lib/services/firecrawl";
-import { handleResearchRequest, jsonResponse } from "@/lib/services/route-helpers";
+import {
+  scrapeWithFirecrawl,
+  type FirecrawlScrapeResult,
+} from "@/lib/services/firecrawl";
+import {
+  handleResearchRequest,
+  jsonResponse,
+} from "@/lib/services/route-helpers";
 
 /**
  * POST /api/research/combined — the full pipeline:
@@ -35,34 +41,41 @@ export interface CombinedResult {
 }
 
 export async function POST(request: Request) {
-  return handleResearchRequest(request, combinedSchema, async (input) => {
+  return handleResearchRequest(request, combinedSchema, async input => {
     const searchResults = await searchWithExa(input.query, {
       numResults: input.numResults,
       type: "neural",
     });
 
     const extractions = await Promise.allSettled(
-      searchResults.map((result) =>
+      searchResults.map(result =>
         scrapeWithFirecrawl(result.url, {
-          formats: input.scrapeDepth === "full" ? ["markdown", "html"] : ["markdown"],
-        }),
-      ),
+          formats:
+            input.scrapeDepth === "full" ? ["markdown", "html"] : ["markdown"],
+        })
+      )
     );
 
-    const results: CombinedResult[] = searchResults.map((result: ExaSearchResult, index) => {
-      const extraction = extractions[index];
-      const scraped: FirecrawlScrapeResult | null = extraction.status === "fulfilled" ? extraction.value : null;
-      return {
-        title: result.title,
-        url: result.url,
-        publishedDate: result.publishedDate,
-        author: result.author,
-        highlights: result.highlights ?? [],
-        markdown: scraped ? scraped.markdown : null,
-        metadata: scraped ? scraped.metadata : null,
-        scrapeError: extraction.status === "rejected" ? (extraction.reason as Error).message : undefined,
-      };
-    });
+    const results: CombinedResult[] = searchResults.map(
+      (result: ExaSearchResult, index) => {
+        const extraction = extractions[index];
+        const scraped: FirecrawlScrapeResult | null =
+          extraction.status === "fulfilled" ? extraction.value : null;
+        return {
+          title: result.title,
+          url: result.url,
+          publishedDate: result.publishedDate,
+          author: result.author,
+          highlights: result.highlights ?? [],
+          markdown: scraped ? scraped.markdown : null,
+          metadata: scraped ? scraped.metadata : null,
+          scrapeError:
+            extraction.status === "rejected"
+              ? "This page could not be extracted. Open the source link to read it."
+              : undefined,
+        };
+      }
+    );
 
     return jsonResponse({ query: input.query, results });
   });

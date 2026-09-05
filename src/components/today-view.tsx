@@ -1,196 +1,598 @@
 "use client";
-
 import Link from "next/link";
-import { ArrowRight, Check, Clock3, PenLine } from "lucide-react";
-import { useMemo, useState } from "react";
+import Image from "next/image";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  BookOpen,
+  Brain,
+  Check,
+  CheckCheck,
+  ChevronRight,
+  Clock3,
+  Code2,
+  Compass,
+  Crosshair,
+  Flame,
+  Orbit,
+  Play,
+  Plus,
+  Sparkles,
+  Target,
+  Timer,
+} from "lucide-react";
+import { useState } from "react";
 import { model } from "@/data";
-import { getLocalDateKey, shiftDateKey } from "@/state/date";
-import { getActivePhase, getDailyPlanRecommendation, getNextAction, getOverallProgress } from "@/state/selectors";
+import { getLocalDateKey, getWeekStartKey, shiftDateKey } from "@/state/date";
+import {
+  getActivePhase,
+  getDailyPlanRecommendation,
+  getDueRetrievalPrompts,
+  getLearningMinutes,
+  getNextAction,
+  getOverallProgress,
+  getStreak,
+  getWeekMinutes,
+} from "@/state/selectors";
 import { useMeridianStore } from "@/state/store";
 import { TickBox } from "./tick-box";
-import { DisplayPair } from "./labeled-item";
-import { MeridianHeroCanvas } from "./webgl/meridian-hero-canvas";
-import { KineticText } from "./motion/kinetic-text";
-import { Reveal } from "./motion/scroll-progress";
-
-const blocks = ["morning", "afternoon", "evening"] as const;
 
 export function TodayView() {
   const state = useMeridianStore();
-  const day = getLocalDateKey(new Date(), state.settings.timeZone);
-  const [log, setLog] = useState(state.dailyLogs[day]?.note ?? "");
-  const [metrics, setMetrics] = useState({
-    build: state.dailyLogs[day]?.build ?? 0,
-    study: state.dailyLogs[day]?.study ?? 0,
-    absorb: state.dailyLogs[day]?.absorb ?? 0,
-    sleep: state.dailyLogs[day]?.sleep ?? 0,
-  });
-  const [saved, setSaved] = useState(false);
-  const activePhase = getActivePhase(model, state);
+  const today = getLocalDateKey(new Date(), state.settings.timeZone);
+  const active = getActivePhase(model, state);
   const next = getNextAction(model, state);
   const overall = getOverallProgress(model, state);
-  const nextSession = next.sessionId
-    ? activePhase.sessions.find((session) => session.id === next.sessionId)
-    : undefined;
-  const currentMode = model.modes.find((item) => item.category === "schedule" && item.key === state.settings.scheduleMode);
-  const recommendation = useMemo(() => getDailyPlanRecommendation(model, state, day), [state, day]);
-  const plan = state.dailyPlans?.[day];
-  const planTasks = plan?.tasks ?? recommendation.tasks;
-  const plannedMinutes = planTasks.filter((task) => task.status !== "deferred").reduce((total, task) => total + task.minutes, 0);
-  const unallocatedMinutes = Math.max(0, recommendation.capacityMinutes - plannedMinutes);
-
-  function savePlan() {
+  const session = model.phases
+    .flatMap(p => p.sessions)
+    .find(s => s.id === next.sessionId);
+  const recommendation = getDailyPlanRecommendation(model, state, today);
+  const plan = state.dailyPlans?.[today];
+  const tasks = plan?.tasks ?? recommendation.tasks;
+  const recall = getDueRetrievalPrompts(state, today);
+  const minutes = getLearningMinutes(state.dailyLogs[today]);
+  const week = getWeekMinutes(state);
+  const completed = Object.values(state.sessions).filter(
+    s => s.completed
+  ).length;
+  const total = model.phases.flatMap(p => p.sessions).length;
+  const [note, setNote] = useState(state.dailyLogs[today]?.note ?? "");
+  const [saved, setSaved] = useState(false);
+  const hour = Number(
+    new Intl.DateTimeFormat("en-GB", {
+      hour: "numeric",
+      hourCycle: "h23",
+      timeZone: state.settings.timeZone,
+    }).format(new Date())
+  );
+  const greeting =
+    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const accept = () =>
     state.setDailyPlan({
       schemaVersion: 1,
-      date: day,
+      date: today,
       capacityMinutes: recommendation.capacityMinutes,
       mode: recommendation.mode,
       generatedAt: new Date().toISOString(),
       tasks: recommendation.tasks,
     });
-  }
-
-  function completePlanTask(task: typeof planTasks[number]) {
-    if (task.id === "habit:h.anki") {
-      state.setHabit(day, "h.anki", !Boolean(state.dailyLogs[day]?.habits?.["h.anki"]));
-      return;
-    }
-    state.setPlanTaskStatus(day, task.id, "completed");
-  }
-
-  const groupedHabits = useMemo(
-    () => blocks.map((block) => ({ block, habits: model.habitStack.filter((habit) => habit.block === block) })),
-    [],
-  );
-
-  function saveLog() {
-    state.setDailyLog(day, metrics.build + metrics.study + metrics.absorb, log, metrics);
+  const primaryHref = session
+    ? `/session/${session.id}`
+    : `/path/${active.id}?tab=checkpoint`;
+  const phaseDone = active.sessions.filter(
+    s => state.sessions[s.id]?.completed
+  ).length;
+  const weekStart = getWeekStartKey(new Date(), state.settings.timeZone);
+  const days = Array.from({ length: 7 }, (_, i) => shiftDateKey(weekStart, i));
+  function saveNote() {
+    state.setDailyLog(today, state.dailyLogs[today]?.manualMinutes ?? 0, note);
     setSaved(true);
-    window.setTimeout(() => setSaved(false), 1800);
+    setTimeout(() => setSaved(false), 1800);
   }
-
   return (
-    <div className="content">
-      {/* Hero: kinetic greeting + the multi-layer parallax astrolabe. */}
-      <div className="hero-banner-wrapper">
-        <div className="hero-copy-column">
-          <div className="page-kicker eyebrow">Today · Phase {activePhase.identity.number + 1}</div>
-          <h1 className="page-title">
-            <KineticText as="span" trigger="hover">
-              {`Good morning, ${model.profile.owner}.`}
-            </KineticText>
-          </h1>
-          <p className="page-intro">
-            One useful thing, then stop. Your current path is <span className="dim">{activePhase.identity.northstarName}</span>.
-          </p>
-        </div>
-        <div className="hero-canvas-column">
-          <MeridianHeroCanvas
-            activePhaseNumber={activePhase.identity.number + 1}
-            phaseProgress={overall.percent}
-          />
-          <div className="geometry-caption" style={{ maxWidth: 400, margin: "10px auto 0" }}>
-            <span>move the cursor — you orbit the core</span>
-            <span>lensed accretion · local render</span>
+    <div className="dashboard content">
+      <div className="dashboard-heading">
+        <div>
+          <div className="eyebrow">
+            <span className="tiny-cross">+</span> YOUR DAILY COORDINATES
           </div>
+          <h1>
+            {greeting}, {model.profile.owner}
+            <span className="greeting-dot">.</span>
+          </h1>
+          <p>A clear mind. A small step. A little closer.</p>
+        </div>
+        <div className="date-label">
+          <CalendarIcon />
+          <span>
+            {new Intl.DateTimeFormat("en", {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+              timeZone: state.settings.timeZone,
+            }).format(new Date())}
+          </span>
         </div>
       </div>
-
-      <Reveal as="section" className="action-panel" >
-        <div className="eyebrow">{next.type === "checkpoint" ? "Checkpoint invitation" : "Your next action"}</div>
-        {nextSession ? (
-          <>
-            <h2 id="next-action" className="action-title">
-              <DisplayPair title={nextSession.title} description={nextSession.outcome} />
-            </h2>
-            <div className="action-meta">
-              <span><Clock3 size={13} style={{ verticalAlign: "middle" }} aria-hidden="true" /> {nextSession.minutes} minutes</span>
-              <span>Minimum version: complete the first proof-bearing attempt.</span>
-            </div>
-            <Link className="button-primary" href={`/session/${nextSession.id}`} onClick={() => state.startSession(nextSession.id)}>
-              Start this session <ArrowRight size={15} aria-hidden="true" />
-            </Link>
-          </>
-        ) : (
-          <>
-            <h2 id="next-action" className="action-title">You have reached the phase checkpoint.</h2>
-            <p className="action-outcome">{activePhase.checkpoint.cockpit.quote}</p>
-            <div className="action-meta"><span>Capability evidence decides what opens next.</span></div>
-            <Link className="button-primary" href={`/path/${activePhase.id}?tab=checkpoint`}>Open checkpoint <ArrowRight size={15} aria-hidden="true" /></Link>
-          </>
-        )}
-      </Reveal>
-
-      <Reveal as="section" className="action-panel plan-panel" aria-labelledby="daily-plan-heading">
-        <div className="section-heading">
+      <section className="cosmic-hero" aria-labelledby="hero-title">
+        <Image
+          src="/assets/meridian-observatory.png"
+          alt="A luminous violet accretion disk orbiting a black hole in a quiet field of stars"
+          fill
+          priority
+          sizes="(max-width: 800px) 100vw, 80vw"
+          className="cosmic-image"
+        />
+        <div className="hero-shade" />
+        <div className="cosmic-copy">
+          <span className="hero-tag">
+            <span className="signal-dot" /> YOUR NEXT FRONTIER
+          </span>
+          <h2 id="hero-title">
+            Less noise.
+            <br />
+            <em>More discovery.</em>
+          </h2>
+          <p>
+            Your universe gets bigger with every session.
+            <br />
+            Let’s make this one count.
+          </p>
+          <Link className="button-primary hero-button" href={primaryHref}>
+            <Play size={14} fill="currentColor" />
+            {session ? "Continue learning" : "Open phase checkpoint"}
+            <ArrowRight size={16} />
+          </Link>
+        </div>
+        <div className="hero-coordinate">
+          <Crosshair size={14} />
+          <span>
+            PHASE {String(active.identity.number + 1).padStart(2, "0")} / 04
+          </span>
+          <span className="coord-line" />
+          <span>{active.identity.northstarName}</span>
+        </div>
+        <span className="hero-corner top-left" />
+        <span className="hero-corner bottom-right" />
+      </section>
+      <section className="stat-strip" aria-label="Your study progress">
+        <div>
+          <span className="stat-icon violet">
+            <Clock3 size={19} />
+          </span>
           <div>
-            <div className="eyebrow">Adaptive daily plan · {plan ? "accepted" : "proposal"}</div>
-            <h2 id="daily-plan-heading" className="section-title">{recommendation.isRestDay ? "Keep the floor. Protect the rest." : "A realistic plan for the capacity you chose."}</h2>
+            <span className="stat-label">Focus today</span>
+            <strong>
+              {minutes}
+              <small> min</small>
+            </strong>
+            <span className="stat-caption">
+              of {recommendation.capacityMinutes} min planned
+            </span>
           </div>
-          <div className="plan-budget"><span className="muted mono">{plannedMinutes} min proposed</span><span className="muted mono">{recommendation.capacityMinutes} min available · {recommendation.mode}</span></div>
         </div>
-        <p className="action-outcome">{recommendation.reasons.join(" ")}</p>
-        {unallocatedMinutes > 0 && <p className="hint">{unallocatedMinutes} minutes remain intentionally unscheduled for notes, breaks, or deeper work. The plan is a focused minimum, not a demand to fill your day.</p>}
-        <div className="plan-task-list">
-          {planTasks.map((task) => {
-            const done = task.status === "completed";
-            return <article className={`plan-task ${done ? "is-complete" : ""}`} key={task.id}>
-              <div className="plan-task-copy"><div className="eyebrow">{task.kind} · {task.minutes} min · {task.status}</div><strong>{task.title}</strong><p>{task.detail}</p><span className="hint">Why now: {task.reason}</span></div>
-              <div className="plan-task-actions">
-                {task.sessionId ? <Link className="button-secondary" href={`/session/${task.sessionId}`} onClick={() => state.startSession(task.sessionId!)}>{done ? "Completed" : "Open session"}</Link> : task.retrievalPromptId ? <Link className="button-secondary" href="/recall">{done ? "Reviewed" : "Open recall"}</Link> : <button className="button-secondary" type="button" onClick={() => completePlanTask(task)}>{done ? "Completed" : task.kind === "habit" ? "Mark review done" : "Mark done"}</button>}
-                {!done && plan && <button className="quiet-link" type="button" onClick={() => state.setPlanTaskStatus(day, task.id, "deferred", shiftDateKey(day, 1))}>Defer to tomorrow</button>}
+        <div>
+          <span className="stat-icon teal">
+            <CheckCheck size={19} />
+          </span>
+          <div>
+            <span className="stat-label">Sessions completed</span>
+            <strong>
+              {completed}
+              <small> / {total}</small>
+            </strong>
+            <span className="stat-caption">Building a real foundation</span>
+          </div>
+        </div>
+        <div>
+          <span className="stat-icon amber">
+            <Flame size={19} />
+          </span>
+          <div>
+            <span className="stat-label">Current streak</span>
+            <strong>
+              {getStreak(state)}
+              <small> days</small>
+            </strong>
+            <span className="stat-caption">Keep showing up for yourself</span>
+          </div>
+        </div>
+        <div>
+          <span className="stat-icon blue">
+            <Orbit size={19} />
+          </span>
+          <div>
+            <span className="stat-label">Journey progress</span>
+            <strong>
+              {overall.percent}
+              <small>%</small>
+            </strong>
+            <span className="stat-caption">Four phases. One direction.</span>
+          </div>
+        </div>
+      </section>
+      <div className="dashboard-columns">
+        <div className="dashboard-primary">
+          <section className="obs-panel next-session">
+            <div className="panel-heading">
+              <h2>
+                <span className="signal-dot" /> Up next
+              </h2>
+              <Link
+                href={`/path/${active.id}?tab=sessions`}
+                className="text-link"
+              >
+                View phase
+                <ArrowUpRight size={14} />
+              </Link>
+            </div>
+            <div className="next-session-body">
+              <span className="session-code">
+                <Code2 size={22} />
+              </span>
+              <div>
+                <div className="eyebrow">
+                  {active.identity.northstarName}{" "}
+                  <span className="label-dot">·</span> SESSION{" "}
+                  {String(phaseDone + 1).padStart(2, "0")}
+                </div>
+                <h3>
+                  {session?.title.replace(/^Tonight: /, "") ??
+                    "Prove what you’ve learned"}
+                </h3>
+                <p>{session?.outcome ?? active.checkpoint.cockpit.quote}</p>
+                <div className="session-pills">
+                  <span>
+                    <Clock3 size={13} />
+                    {session?.minutes ?? 20} min
+                  </span>
+                  <span>
+                    <Target size={13} />
+                    {session
+                      ? `${session.steps.length} guided steps`
+                      : "Capability checkpoint"}
+                  </span>
+                  <span className="pill-violet">
+                    {state.sessionAttempts?.[session?.id ?? ""]
+                      ? "In progress"
+                      : "Ready when you are"}
+                  </span>
+                </div>
               </div>
-            </article>;
-          })}
-        </div>
-        <div className="plan-controls">
-          <button className="button-primary" type="button" onClick={savePlan}>{plan ? "Regenerate plan" : "Accept this plan"}</button>
-          {plan && <span className="hint">Accepted {new Date(plan.acceptedAt ?? plan.generatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}. Deferred work appears in tomorrow’s proposal.</span>}
-        </div>
-      </Reveal>
-
-      <Reveal as="section" className="section" aria-labelledby="rhythm-heading">
-        <div className="section-heading">
-          <div><div className="eyebrow">The daily rhythm</div><h2 id="rhythm-heading" className="section-title">Small anchors, grouped by energy.</h2></div>
-          <span className="muted mono" style={{ fontSize: 11 }}>{currentMode?.label}</span>
-        </div>
-        {groupedHabits.map(({ block, habits }) => (
-          <div className="habit-block" key={block}>
-            <div className="eyebrow">{model.blocks[block].label} · {model.blocks[block].mode}</div>
-            <div className="habit-list">
-              {habits.map((habit) => {
-                const checked = Boolean(state.dailyLogs[day]?.habits?.[habit.id]);
+            </div>
+            <div className="next-session-footer">
+              <span>
+                <span className="small-track">
+                  <span
+                    style={{
+                      width: `${(phaseDone / active.sessions.length) * 100}%`,
+                    }}
+                  />
+                </span>
+                {phaseDone} / {active.sessions.length} in this phase
+              </span>
+              <Link className="text-link accent-link" href={primaryHref}>
+                {state.sessionAttempts?.[session?.id ?? ""]
+                  ? "Resume session"
+                  : "Start session"}
+                <ArrowRight size={16} />
+              </Link>
+            </div>
+          </section>
+          <section className="obs-panel plan-card" id="daily-plan-heading">
+            <div className="panel-heading">
+              <h2>
+                <Compass size={18} /> Today’s flight plan
+              </h2>
+              <span className="muted">
+                {tasks.filter(t => t.status === "completed").length}/
+                {tasks.length} done
+              </span>
+            </div>
+            <div className="plan-summary">
+              <span>
+                {recommendation.isRestDay
+                  ? "A lighter day to recharge."
+                  : "A little structure for your next few steps."}
+              </span>
+              <label className="pace-select">
+                <span className="sr-only">Study pace</span>
+                <select
+                  aria-label="Study pace"
+                  value={state.settings.scheduleMode}
+                  onChange={e => state.setScheduleMode(e.target.value)}
+                >
+                  {model.modes
+                    .filter(m => m.category === "schedule")
+                    .map(m => (
+                      <option key={m.key} value={m.key}>
+                        {m.label}
+                      </option>
+                    ))}
+                </select>
+              </label>
+            </div>
+            <div className="flight-tasks">
+              {tasks.map((task, index) => {
+                const done = task.status === "completed";
                 return (
-                  <div className="habit-row" key={habit.id}>
-                    <TickBox className="habit-check" checked={checked} label={`Mark ${habit.label} ${checked ? "not done" : "done"}`} onChange={() => state.setHabit(day, habit.id, !checked)} />
-                    <span className="habit-time">{habit.from}—{habit.to}</span>
-                    <DisplayPair className="habit-label" title={habit.label} description={habit.detail} />
-                    {habit.star && <span className="eyebrow">Core</span>}
+                  <div
+                    className={`flight-task ${done ? "done" : ""} ${task.status === "deferred" ? "deferred" : ""}`}
+                    key={task.id}
+                  >
+                    <span className={`task-marker ${done ? "complete" : ""}`}>
+                      {done ? (
+                        <Check size={14} />
+                      ) : (
+                        String(index + 1).padStart(2, "0")
+                      )}
+                    </span>
+                    <div>
+                      <strong>{task.title}</strong>
+                      <span>
+                        {task.minutes} min <span className="label-dot">·</span>{" "}
+                        {task.kind === "session"
+                          ? "Guided learning"
+                          : task.kind === "retrieval"
+                            ? "Keep it in memory"
+                            : task.kind === "reflection"
+                              ? "Capture what changed"
+                              : "Daily anchor"}
+                        {task.status === "deferred"
+                          ? " · Deferred to tomorrow"
+                          : ""}
+                      </span>
+                    </div>
+                    {task.sessionId ? (
+                      <Link
+                        className="icon-button"
+                        href={`/session/${task.sessionId}`}
+                        aria-label={`Open ${task.title}`}
+                      >
+                        <ArrowUpRight size={17} />
+                      </Link>
+                    ) : task.retrievalPromptId ? (
+                      <Link
+                        className="icon-button"
+                        href="/recall"
+                        aria-label="Open recall"
+                      >
+                        <ArrowUpRight size={17} />
+                      </Link>
+                    ) : (
+                      <TickBox
+                        className="flight-check"
+                        checked={done}
+                        label={`Complete ${task.title}`}
+                        onChange={() => {
+                          if (!plan) accept();
+                          if (task.kind === "habit")
+                            state.setHabit(today, "h.anki", !done);
+                          else
+                            state.setPlanTaskStatus(
+                              today,
+                              task.id,
+                              done ? "accepted" : "completed"
+                            );
+                        }}
+                      />
+                    )}
+                    {plan && !done && task.status !== "deferred" && (
+                      <button
+                        className="defer-button"
+                        onClick={() =>
+                          state.setPlanTaskStatus(
+                            today,
+                            task.id,
+                            "deferred",
+                            shiftDateKey(today, 1)
+                          )
+                        }
+                        aria-label={`Defer ${task.title} to tomorrow`}
+                        title="Defer to tomorrow"
+                      >
+                        ↪
+                      </button>
+                    )}
                   </div>
                 );
               })}
             </div>
-          </div>
-        ))}
-      </Reveal>
-
-      <Reveal as="section" className="section" aria-labelledby="log-heading" id="daily-capture">
-        <div className="section-heading"><div><div className="eyebrow">End of day</div><h2 id="log-heading" className="section-title">Leave one honest line.</h2></div><PenLine size={17} aria-hidden="true" /></div>
-        <div className="form-grid" style={{ marginBottom: 14 }}>
-          {(["build", "study", "absorb", "sleep"] as const).map((key) => <label className="eyebrow" key={key}>{key} minutes<input type="number" min="0" value={metrics[key]} onChange={(event) => setMetrics({ ...metrics, [key]: Number(event.target.value) || 0 })} /></label>)}
+            {!plan && (
+              <button className="accept-plan" onClick={accept}>
+                <Plus size={15} />
+                Accept today’s plan
+                <span>{recommendation.capacityMinutes} min available</span>
+              </button>
+            )}
+            {plan && (
+              <div className="accepted-plan">
+                <Check size={14} />
+                Plan accepted<span>Adjust your pace in Settings</span>
+              </div>
+            )}
+          </section>
+          <section className="obs-panel mini-map">
+            <div className="panel-heading">
+              <h2>
+                <Orbit size={18} /> Your learning trajectory
+              </h2>
+              <Link href="/path" className="text-link">
+                Explore map
+                <ArrowUpRight size={14} />
+              </Link>
+            </div>
+            <div className="trajectory-stations">
+              {model.phases.map((phase, i) => (
+                <Link
+                  href={`/path?phase=${phase.id}`}
+                  className={`trajectory-station ${active.id === phase.id ? "current" : ""}`}
+                  key={phase.id}
+                >
+                  <span className="station-orbit">
+                    {active.id === phase.id ? <span /> : i + 1}
+                  </span>
+                  <small>PHASE 0{i + 1}</small>
+                  <strong>{phase.identity.northstarName}</strong>
+                  <span>
+                    {active.id === phase.id
+                      ? "You are here"
+                      : i < active.identity.number
+                        ? "Explored"
+                        : "Ahead of you"}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </section>
         </div>
-        <textarea className="journal-input" aria-label="Daily log" value={log} onChange={(event) => setLog(event.target.value)} placeholder="What changed your mind today?" />
-        <button className="button-secondary" type="button" onClick={saveLog}>{saved ? <><Check size={15} /> Saved</> : "Save daily log"}</button>
-      </Reveal>
-
-      <Reveal as="section" className="section" aria-labelledby="progress-heading">
-        <div className="section-heading"><div><div className="eyebrow">The longer view</div><h2 id="progress-heading" className="section-title">Keep the thread.</h2></div><Link className="quiet-link" href="/path">Open path</Link></div>
-        <div className="metric-grid" style={{ marginTop: 22 }}>
-          <div className="metric"><span className="eyebrow">Capability</span><strong className="metric-value">{overall.percent}%</strong></div>
-          <div className="metric"><span className="eyebrow">Active phase</span><strong className="metric-value">{String(activePhase.identity.number + 1).padStart(2, "0")}</strong></div>
-          <div className="metric"><span className="eyebrow">Tomorrow</span><strong className="metric-value" style={{ fontSize: 16, marginTop: 12 }}>Return to the next action.</strong></div>
-        </div>
-      </Reveal>
+        <aside className="dashboard-secondary">
+          <section className="obs-panel focus-invite">
+            <div className="panel-heading">
+              <h2>
+                <Timer size={18} /> A little space to focus
+              </h2>
+              <span className="pill-violet">DEEP WORK</span>
+            </div>
+            <div className="focus-dial-mini">
+              <span>
+                25<span>:00</span>
+              </span>
+              <small>ONE THING AT A TIME</small>
+            </div>
+            <p>
+              Close the extra tabs.
+              <br />
+              Give your next idea some room.
+            </p>
+            <Link href="/focus" className="button-primary">
+              <Play size={14} fill="currentColor" />
+              Enter focus room
+              <ArrowRight size={16} />
+            </Link>
+          </section>
+          <section className="obs-panel week-card">
+            <div className="panel-heading">
+              <h2>This week, so far</h2>
+              <Link
+                href="/review"
+                aria-label="Open weekly review"
+                className="icon-button"
+              >
+                <ArrowUpRight size={16} />
+              </Link>
+            </div>
+            <div className="week-total">
+              {(week / 60).toFixed(1)}
+              <span>hours of focused work</span>
+            </div>
+            <div className="week-bars">
+              {days.map(day => {
+                const value = getLearningMinutes(state.dailyLogs[day]);
+                return (
+                  <div key={day} className={day === today ? "today" : ""}>
+                    <div className="bar-space">
+                      <span
+                        style={{
+                          height: `${Math.max(4, Math.min(100, (value / Math.max(60, ...days.map(d => getLearningMinutes(state.dailyLogs[d])))) * 100))}%`,
+                        }}
+                        title={`${day}: ${value} minutes`}
+                      />
+                    </div>
+                    <small>
+                      {new Intl.DateTimeFormat("en", {
+                        weekday: "narrow",
+                        timeZone: "UTC",
+                      }).format(new Date(day + "T12:00:00Z"))}
+                    </small>
+                  </div>
+                );
+              })}
+            </div>
+            <p>
+              {week === 0
+                ? "Your first session starts the story."
+                : "Every focused minute moves you forward."}
+            </p>
+          </section>
+          <Link className="obs-panel recall-nudge" href="/recall">
+            <span className="stat-icon violet">
+              <Brain size={20} />
+            </span>
+            <span>
+              <strong>
+                {recall.length
+                  ? `${recall.length} ideas to revisit`
+                  : "Make it stick"}
+              </strong>
+              <small>
+                {recall.length
+                  ? "A quick recall keeps them close."
+                  : "Your recall queue is clear."}
+              </small>
+            </span>
+            <ChevronRight size={16} />
+          </Link>
+          <section className="obs-panel quick-note">
+            <div className="panel-heading">
+              <h2>
+                <BookOpen size={17} /> A thought worth keeping
+              </h2>
+            </div>
+            <textarea
+              aria-label="Daily reflection"
+              placeholder="What clicked today? What’s still a question?"
+              value={note}
+              onChange={e => {
+                setNote(e.target.value);
+                setSaved(false);
+              }}
+            />
+            <div>
+              <Link className="text-link" href="/journal">
+                Open journal
+                <ArrowUpRight size={13} />
+              </Link>
+              <button className="text-link accent-link" onClick={saveNote}>
+                {saved ? (
+                  <>
+                    <Check size={14} />
+                    Captured
+                  </>
+                ) : (
+                  "Save note"
+                )}
+              </button>
+            </div>
+          </section>
+        </aside>
+      </div>
+      <div className="dashboard-bottom-note">
+        <Sparkles size={15} />
+        <span>
+          You don’t need to see the whole universe. Just your next step.
+        </span>
+        <Link href="/first-seven-days">
+          Your first seven days
+          <ArrowUpRight size={13} />
+        </Link>
+      </div>
     </div>
+  );
+}
+function CalendarIcon() {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      aria-hidden="true"
+    >
+      <rect x="3" y="5" width="18" height="16" rx="3" />
+      <path d="M16 3v4M8 3v4M3 11h18" />
+    </svg>
   );
 }

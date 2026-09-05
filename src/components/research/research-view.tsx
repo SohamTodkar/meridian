@@ -1,626 +1,397 @@
 "use client";
+import Link from "next/link";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  BookOpen,
+  Bookmark,
+  Check,
+  Globe2,
+  Search,
+  Sparkles,
+  X,
+} from "lucide-react";
+import { model } from "@/data";
+import { useCloudStore } from "@/state/cloud";
+import { useMeridianStore } from "@/state/store";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { FlaskConical } from "lucide-react";
-import { KineticText } from "@/components/motion/kinetic-text";
-import { RiveFrame } from "@/components/rive/rive-frame";
-import { ThinkingState, type ThinkingRow } from "@/components/research/ui/thinking-state";
-import { ToolChips, type SourceChip, type ToolRow } from "@/components/research/ui/tool-chips";
-import { ContextCards, type ContextChunk } from "@/components/research/ui/context-cards";
-import { StreamingText, type AnswerPoint, type AnswerSource } from "@/components/research/ui/streaming-text";
-import { RecommendationCard, type CardOption } from "@/components/research/ui/recommendation-card";
-import { SelectionActions } from "@/components/research/ui/selection-actions";
-import { PromptBar } from "@/components/research/ui/prompt-bar";
-import { ResearchHistory, type HistoryEntry, type SavedSource } from "@/components/research/ui/research-history";
-
-/**
- * The Research desk — a staged answer thread (the "structured and detailed
- * output" rebuild). Every stage is live pipeline data:
- *
- *   PromptBar        the query composer (@ sources, / commands, depth)
- *   ThinkingState    "Searching the web" while Exa is in flight, then the
- *                    real source trace settles open
- *   StreamingText    THE SUMMARY FIRST — a cited lead paragraph streams,
- *                    then the key points surface as a headed list, each
- *                    point carrying its source chip (+n corroborations)
- *   ToolChips        the pipeline rows — Exa discovery, Firecrawl
- *                    extractions as they complete, synthesis
- *   ContextCards     the extracted chunks, counted and linked
- *   Recommendation   real next actions (open strongest source, extract the
- *                    rest, save sources locally)
- *   SelectionActions on the answer's key claim — Explain fires a real child
- *                    research turn; the rest are honest local transforms
- *
- * The answer streams from search highlights immediately; full extraction
- * runs alongside it and feeds the sources stage that follows the summary.
- *
- * History and saved sources persist in this browser only.
- */
-
-type TurnPhase = "thinking" | "searched" | "answering" | "done" | "error";
-
-interface TurnResult {
+type Source = {
   title: string;
   url: string;
-  publishedDate?: string;
-  author?: string;
-  highlights: string[];
+  highlights: readonly string[];
   markdown: string | null;
-}
-
-interface Turn {
-  id: number;
-  query: string;
-  deep: boolean;
-  phase: TurnPhase;
-  results: TurnResult[];
-  extractions: Record<string, string>;
-  extractingUrls: string[];
-  lead: string;
-  citeAfter: number;
-  points: AnswerPoint[];
-  followUps: string[];
-  error?: string;
-}
-
-const HISTORY_KEY = "meridian.research.v1";
-const MAX_EXTRACT = 3;
-
-function domainOf(url: string): string {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return url;
-  }
-}
-
-/** Phrases site chrome uses that never belong in an excerpt or a highlight. */
-const BOILERPLATE = /(skip to (main )?content|thank you for visiting|to obtain the best experience|up to date browser|compatibility mode|ensure continued support|cookie|enable javascript|browser version|by using this site|terms of use|privacy policy|subscribe|sign in|log in to|advertisement|share this article|read more:?$)/i;
-
-/** Drop leading boilerplate sentences until real content shows. */
-function stripLeadingBoilerplate(text: string): string {
-  const sentences = text.split(/(?<=[.!?])\s/);
-  while (sentences.length > 1 && BOILERPLATE.test(sentences[0])) sentences.shift();
-  if (sentences.length > 0 && BOILERPLATE.test(sentences[0]) && sentences[0].length < 90) sentences.shift();
-  return sentences.join(" ").trim();
-}
-
-function cleanExcerpt(markdown: string): string {
-  const text = markdown
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
-    .replace(/[#>*_`|]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  return stripLeadingBoilerplate(text);
-}
-
-function trimWords(text: string, maxChars: number): string {
-  if (text.length <= maxChars) return text;
-  const cut = text.slice(0, maxChars);
-  const lastSpace = cut.lastIndexOf(" ");
-  return `${cut.slice(0, lastSpace > maxChars * 0.6 ? lastSpace : maxChars).trim()}…`;
-}
-
-function firstSentence(text: string): string {
-  return text.split(/(?<=[.!?])\s/)[0] ?? text;
-}
-
-/** Topic words appear in every source of a query — they never corroborate a specific point. */
-const CORROBORATION_STOP = new Set([
-  "learning", "machine", "training", "because", "between", "through", "should", "would", "another",
-  "important", "general", "different", "example", "examples", "concept", "concepts", "beginner",
-  "beginners", "fundamental", "fundamentals", "understanding", "algorithm", "algorithms", "practice",
-  "practical", "computer", "programs", "systems", "sources", "results",
-]);
-
-/** How many other sources echo this point (share ≥2 specific words)? */
-function corroborations(text: string, selfUrl: string, results: TurnResult[]): number {
-  const words = new Set(
-    text.toLowerCase().split(/[^a-z]+/).filter((word) => word.length >= 6 && !CORROBORATION_STOP.has(word)),
-  );
-  if (words.size === 0) return 0;
-  let count = 0;
-  for (const other of results) {
-    if (other.url === selfUrl) continue;
-    const haystack = `${other.title} ${other.highlights[0] ?? ""}`.toLowerCase();
-    let hits = 0;
-    for (const word of words) if (haystack.includes(word)) hits += 1;
-    if (hits >= 2) count += 1;
-  }
-  return Math.min(count, 2);
-}
-
-/** A numbered highlight ("1. … 2. …") becomes one point per item; prose becomes its first sentence. */
-function pointsFromHighlight(highlight: string): string[] {
-  const numbered = highlight.split(/\s*\d+[\.)]\s+/).map((part) => part.trim()).filter((part) => part.length > 30);
-  if (numbered.length >= 2) return numbered.slice(0, 3).map((part) => trimWords(part, 150));
-  return [trimWords(firstSentence(highlight) || highlight, 150)];
-}
-
-/** Compose the structured summary: a cited lead paragraph, then key points each backed by a source. */
-function synthesize(query: string, results: TurnResult[]): { lead: string; citeAfter: number; points: AnswerPoint[]; followUps: string[] } {
-  // Rank by the cleanest (post-scrub) highlight, not the raw one.
-  const cleaned = results.map((result) => ({
-    ...result,
-    highlights: result.highlights.map(stripLeadingBoilerplate).filter((text) => text.length > 40),
-  }));
-  const ranked = [...cleaned].sort((a, b) => (b.highlights[0]?.length ?? 0) - (a.highlights[0]?.length ?? 0));
-  const primary = ranked.find((result) => result.highlights.length > 0) ?? ranked[0];
-  const secondary = ranked.find((result) => result !== primary && result.highlights.length > 0);
-
-  const h1 = primary?.highlights[0] ? trimWords(primary.highlights[0], 240) : primary ? trimWords(primary.title, 160) : "";
-  const h2 = secondary?.highlights[0] ? ` A second source agrees: ${trimWords(secondary.highlights[0], 150)}` : "";
-  const lead = `Across ${results.length} sources on “${trimWords(query, 60)}”, the strongest signal: ${h1}.${h2}`.replace(/\.{2,}$/, ".");
-  // StreamingText indexes by word+separator tokens — count in the same units so the chip lands at the end.
-  const citeAfter = lead.split(/(\s+)/).filter((token) => token.length > 0).length;
-
-  const points: AnswerPoint[] = [];
-  const seen = new Set<string>([h1.slice(0, 48).toLowerCase()]);
-  for (const result of ranked) {
-    const highlight = result.highlights[0];
-    if (!highlight || points.length >= 6) continue;
-    const source: AnswerSource = { name: trimWords(result.title, 40), domain: domainOf(result.url), href: result.url };
-    for (const candidate of pointsFromHighlight(highlight)) {
-      if (points.length >= 6) break;
-      const key = candidate.slice(0, 48).toLowerCase();
-      if (key.length < 20 || seen.has(key)) continue;
-      seen.add(key);
-      points.push({ text: candidate, source, more: corroborations(candidate, result.url, ranked) });
-    }
-  }
-  if (points.length === 0 && primary) {
-    points.push({
-      text: trimWords(stripLeadingBoilerplate(primary.title), 150),
-      source: { name: trimWords(primary.title, 40), domain: domainOf(primary.url), href: primary.url },
-      more: 0,
-    });
-  }
-
-  const followUps = [
-    `${trimWords(query, 50)} — recent developments`,
-    `${trimWords(query, 50)} — for beginners`,
-    ...(primary ? [`${trimWords(primary.title, 60)} — go deeper`] : []),
-  ].slice(0, 3);
-
-  return { lead, citeAfter, points, followUps };
-}
-
+  phase?: string;
+  scrapeError?: string;
+};
+const shelf = Array.from(
+  new Map(
+    model.phases.flatMap(phase =>
+      phase.resources
+        .filter(resource => resource.url)
+        .map(
+          resource =>
+            [
+              resource.url!,
+              {
+                title: resource.name,
+                url: resource.url!,
+                highlights: [
+                  resource.why ??
+                    resource.note ??
+                    resource.role ??
+                    phase.identity.summary,
+                ],
+                markdown: null,
+                phase: phase.identity.northstarName,
+              },
+            ] as const
+        )
+    )
+  ).values()
+);
 export function ResearchView() {
-  const [turns, setTurns] = useState<Turn[]>([]);
+  const cloud = useCloudStore();
+  const state = useMeridianStore();
+  const [mode, setMode] = useState<"library" | "web">("library");
+  const [query, setQuery] = useState("");
+  const [submitted, setSubmitted] = useState("");
+  const [results, setResults] = useState<Source[]>(shelf);
   const [busy, setBusy] = useState(false);
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
-  const [savedSources, setSavedSources] = useState<SavedSource[]>([]);
-  const turnIdRef = useRef(0);
-  const historyLoadedRef = useRef(false);
-
-  /* Local-first persistence — load once (deferred), save on change. */
-  useEffect(() => {
-    if (historyLoadedRef.current) return;
-    historyLoadedRef.current = true;
-    const frame = requestAnimationFrame(() => {
-      try {
-        const raw = localStorage.getItem(HISTORY_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw) as { queries?: HistoryEntry[]; sources?: SavedSource[] };
-          setHistory(parsed.queries ?? []);
-          setSavedSources(parsed.sources ?? []);
-        }
-      } catch {
-        /* unreadable history is simply ignored */
-      }
-    });
-    return () => cancelAnimationFrame(frame);
-  }, []);
-
-  useEffect(() => {
-    if (!historyLoadedRef.current) return;
-    const timer = window.setTimeout(() => {
-      try {
-        localStorage.setItem(HISTORY_KEY, JSON.stringify({ queries: history.slice(0, 40), sources: savedSources.slice(0, 40) }));
-      } catch {
-        /* storage full or blocked — history stays in-memory */
-      }
-    }, 400);
-    return () => window.clearTimeout(timer);
-  }, [history, savedSources]);
-
-  const patchTurn = useCallback((id: number, patch: Partial<Turn> | ((turn: Turn) => Partial<Turn>)) => {
-    setTurns((current) =>
-      current.map((turn) => (turn.id === id ? { ...turn, ...(typeof patch === "function" ? patch(turn) : patch) } : turn)),
-    );
-  }, []);
-
-  /** Fire-and-watch full extraction of the top sources — runs alongside the streaming summary. */
-  const extractTop = useCallback(async (id: number, results: TurnResult[]) => {
-    const targets = results.slice(0, MAX_EXTRACT).filter((result) => result.markdown === null);
-    patchTurn(id, { extractingUrls: targets.map((result) => result.url) });
-    if (targets.length === 0) return;
-
-    await Promise.all(
-      targets.map(async (result) => {
-        const finish = (markdown: string | null) =>
-          patchTurn(id, (turn) => ({
-            results: turn.results.map((entry) => (entry.url === result.url ? { ...entry, markdown } : entry)),
-            extractingUrls: turn.extractingUrls.filter((url) => url !== result.url),
-          }));
-        try {
-          const response = await fetch("/api/research/scrape", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ url: result.url, formats: ["markdown"] }),
-          });
-          const payload = (await response.json()) as { data?: { markdown: string } };
-          finish(payload.data?.markdown ?? null);
-        } catch {
-          finish(null);
-        }
-      }),
-    );
-  }, [patchTurn]);
-
-  /** The summary streams from search highlights immediately; extraction feeds the sources stage after it. */
-  const startAnswer = useCallback((id: number, results: TurnResult[]) => {
-    patchTurn(id, (turn) => ({ phase: "answering", ...synthesize(turn.query, results) }));
-    void extractTop(id, results);
-  }, [patchTurn, extractTop]);
-
-  const runTurn = useCallback(async (query: string, deep: boolean) => {
+  const [error, setError] = useState("");
+  const [selected, setSelected] = useState<Source | null>(null);
+  const [saved, setSaved] = useState<string[]>([]);
+  const controller = useRef<AbortController | null>(null);
+  useEffect(() => () => controller.current?.abort(), []);
+  const webAvailable = cloud.research && !cloud.visitor;
+  async function search(event?: FormEvent) {
+    event?.preventDefault();
+    if (query.trim().length < 2) {
+      setError("Enter at least two characters to search.");
+      return;
+    }
+    setError("");
+    setSelected(null);
+    setSubmitted(query.trim());
+    if (mode === "library") {
+      const words = query.toLowerCase().trim().split(/\s+/);
+      setResults(
+        shelf.filter(source =>
+          words.every(word =>
+            `${source.title} ${source.highlights.join(" ")} ${source.phase}`
+              .toLowerCase()
+              .includes(word)
+          )
+        )
+      );
+      return;
+    }
+    controller.current?.abort();
+    controller.current = new AbortController();
+    const timer = setTimeout(() => controller.current?.abort(), 90000);
     setBusy(true);
-    const id = ++turnIdRef.current;
-    const turn: Turn = {
-      id,
-      query,
-      deep,
-      phase: "thinking",
-      results: [],
-      extractions: {},
-      extractingUrls: [],
-      lead: "",
-      citeAfter: 0,
-      points: [],
-      followUps: [],
-    };
-    setTurns((current) => [...current, turn]);
-    const stamp = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    setHistory((current) => [{ query, at: stamp, deep }, ...current.filter((entry) => entry.query !== query)].slice(0, 40));
-
     try {
-      const endpoint = deep ? "/api/research/combined" : "/api/research/search";
-      const body = deep ? { query, numResults: 5, scrapeDepth: "basic" } : { query, numResults: 10 };
-      const response = await fetch(endpoint, {
+      const response = await fetch("/api/research/combined/", {
         method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(body),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: query.trim(),
+          numResults: 5,
+          scrapeDepth: "basic",
+        }),
+        signal: controller.current.signal,
       });
-      const payload = (await response.json()) as
-        | { results: Array<{ title: string; url: string; publishedDate?: string; author?: string; highlights?: string[]; markdown?: string | null }> }
-        | { error: string };
-
-      if (!response.ok || "error" in payload) {
-        const message = "error" in payload ? payload.error : `Request failed (${response.status}).`;
-        patchTurn(id, { phase: "error", error: message });
-        return;
-      }
-
-      const results: TurnResult[] = payload.results.map((result) => ({
-        title: result.title,
-        url: result.url,
-        publishedDate: result.publishedDate,
-        author: result.author,
-        highlights: result.highlights ?? [],
-        markdown: result.markdown ?? null,
-      }));
-      patchTurn(id, { phase: "searched", results });
-      // Both depths funnel through ThinkingState's onSettled → startAnswer:
-      // the summary streams from highlights while extraction runs alongside.
-    } catch (requestError) {
-      patchTurn(id, { phase: "error", error: `Could not reach the research pipeline: ${(requestError as Error).message}` });
+      const result = await response.json();
+      if (!response.ok)
+        throw new Error(result.error ?? "Search couldn’t finish. Try again.");
+      setResults(result.results);
+    } catch (e) {
+      setError(
+        (e as Error).name === "AbortError"
+          ? "Search stopped. You can try again whenever you’re ready."
+          : (e as Error).message
+      );
     } finally {
+      clearTimeout(timer);
       setBusy(false);
     }
-  }, [patchTurn]);
-
-  /* ---- derived per-turn view models ---------------------------------- */
-
-  const thinkingRows = (turn: Turn): ThinkingRow[] =>
-    turn.results.slice(0, 3).map((result) => ({
-      primary: trimWords(result.title, 42),
-      secondary: domainOf(result.url),
-      href: result.url,
-    }));
-
-  const toolRows = (turn: Turn): ToolRow[] => {
-    const rows: ToolRow[] = [
-      {
-        icon: "think",
-        label: "Plan",
-        chip: turn.query,
-        mono: false,
-        detailMono: false,
-        detail: [
-          { text: `Exa neural search${turn.deep ? " + Firecrawl deep extraction" : ""} for this turn.` },
-          { text: `Top ${Math.min(MAX_EXTRACT, turn.results.length || MAX_EXTRACT)} sources selected for full extraction.` },
-        ],
-      },
-    ];
-    if (turn.results.length > 0) {
-      rows.push({
-        icon: "read",
-        label: "Exa search",
-        chip: `${turn.results.length} results`,
-        mono: false,
-        detailMono: false,
-        detail: turn.results.slice(0, 3).map((result) => ({ text: `${domainOf(result.url)} — ${trimWords(result.title, 60)}` })),
+  }
+  function save(source: Source) {
+    const existing = state.evidence?.find(e => e.url === source.url);
+    if (!existing)
+      state.addEvidence({
+        id: `research.${crypto.randomUUID()}`,
+        kind: "link",
+        title: source.title,
+        url: source.url,
+        note: source.highlights.join("\n").slice(0, 5000),
+        proofStatus: "captured",
+        capability: source.phase,
       });
-    }
-    const extracted = turn.results.filter((result) => result.markdown !== null);
-    if (turn.extractingUrls.length > 0 || extracted.length > 0) {
-      rows.push({
-        icon: "write",
-        label: `Firecrawl × ${turn.extractingUrls.length || extracted.length}`,
-        chip: `${extracted.length} extracted`,
-        mono: false,
-        detailMono: true,
-        detail: extracted.length > 0
-          ? extracted.map((result) => ({ text: `+ ${domainOf(result.url)} · ${result.markdown?.length ?? 0} chars`, tone: "add" as const }))
-          : [{ text: "rendering sources as markdown…" }],
-      });
-    }
-    if (turn.phase === "done") {
-      rows.push({
-        icon: "run",
-        label: "Synthesis",
-        chip: "answer",
-        mono: true,
-        detailMono: false,
-        detail: [
-          { text: "Summary streamed from the strongest highlights, points cited per source." },
-          { text: `${turn.results.length} sources considered · ${extracted.length} read in full.` },
-        ],
-      });
-    }
-    return rows;
-  };
-
-  const sourceChips = (turn: Turn): SourceChip[] =>
-    turn.results
-      .filter((result) => result.markdown)
-      .map((result) => {
-        const lines = cleanExcerpt(result.markdown ?? "")
-          .split(/(?<=[.!?])\s/)
-          .filter((sentence) => sentence.length > 24)
-          .slice(0, 5)
-          .map((sentence, index) => ({ text: trimWords(sentence, 64), tone: (index === 0 ? "ctx" : "add") as "ctx" | "add" }));
-        return {
-          file: domainOf(result.url),
-          add: result.markdown?.length ?? 0,
-          del: 0,
-          lines,
-          href: result.url,
-        };
-      });
-
-  const chunks = (turn: Turn): ContextChunk[] =>
-    turn.results
-      .filter((result) => result.markdown)
-      .map((result) => {
-        const excerpt = cleanExcerpt(result.markdown ?? "");
-        const isPdf = result.url.toLowerCase().endsWith(".pdf");
-        return {
-          title: trimWords(result.title, 48),
-          chars: `${(result.markdown?.length ?? 0).toLocaleString()} characters`,
-          body: trimWords(excerpt, 180),
-          source: domainOf(result.url),
-          badge: isPdf ? "PDF" : "WEB",
-          tone: isPdf ? "bg-red" : "bg-accent",
-          href: result.url,
-        };
-      });
-
-  const recommendationOptions = (turn: Turn): CardOption[] => {
-    const primary = [...turn.results].sort((a, b) => (b.highlights[0]?.length ?? 0) - (a.highlights[0]?.length ?? 0))[0];
-    const options: CardOption[] = [];
-    if (primary) {
-      options.push({
-        key: "open",
-        body: (
-          <>
-            Open the strongest source — <span className="font-medium text-ink">{trimWords(primary.title, 64)}</span> — and
-            read the original in full.
-          </>
-        ),
-        short: `Open ${domainOf(primary.url)}`,
-        signal: 3,
-        tone: "var(--color-green)",
-        label: "High confidence",
-        cta: "Open source",
-        ctaVariant: "accent",
-      });
-    }
-    options.push({
-      key: "save",
-      body: <>Save this turn’s sources to your local source list — kept on this device, inside the history panel below.</>,
-      short: "Save sources locally",
-      signal: 2,
-      tone: "var(--color-orange)",
-      label: "Local only",
-      cta: "Save sources",
-      ctaVariant: "primary",
-    });
-    options.push({
-      key: "rerun",
-      body: (
-        <>
-          Re-run the search fresh — caches are bypassed for a <span className="font-medium text-ink">new sweep</span> of the same question.
-        </>
-      ),
-      short: "Fresh re-run of this query",
-      signal: 0,
-      tone: "var(--color-ink-3)",
-      label: "No new signal",
-      cta: "Re-run",
-      ctaVariant: "secondary",
-    });
-    return options;
-  };
-
-  const onConfirmRecommendation = (turn: Turn, option: CardOption) => {
-    if (option.key === "open") {
-      const primary = [...turn.results].sort((a, b) => (b.highlights[0]?.length ?? 0) - (a.highlights[0]?.length ?? 0))[0];
-      if (primary) window.open(primary.url, "_blank", "noreferrer");
-    }
-    if (option.key === "save") {
-      const stamp = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-      void stamp;
-      setSavedSources((current) => {
-        const additions = turn.results.slice(0, 5).map((result) => ({
-          name: trimWords(result.title, 48),
-          domain: domainOf(result.url),
-          href: result.url,
-        }));
-        const merged = [...additions, ...current].filter(
-          (source, index, all) => all.findIndex((entry) => entry.href === source.href) === index,
-        );
-        return merged.slice(0, 40);
-      });
-    }
-    if (option.key === "rerun") void runTurn(turn.query, turn.deep);
-  };
-
-  const claimOf = (turn: Turn): string => {
-    const ranked = [...turn.results].sort((a, b) => (b.highlights[0]?.length ?? 0) - (a.highlights[0]?.length ?? 0));
-    const primary = ranked[0];
-    const claim = stripLeadingBoilerplate(primary?.highlights[0] ?? primary?.title ?? turn.query);
-    return trimWords(firstSentence(claim) || claim, 180);
-  };
-
-  const answerTextOf = (turn: Turn): string =>
-    [turn.lead, ...turn.points.map((point) => `• ${point.text} — ${point.source.domain}`)].join("\n\n");
-
+    setSaved(v => [...v, source.url]);
+  }
+  function changeMode(next: "library" | "web") {
+    setMode(next);
+    setError("");
+    setSubmitted("");
+    setResults(next === "library" ? shelf : []);
+    setSelected(null);
+  }
   return (
-    <div className="content">
-      <div className="research-head">
-        <div className="page-kicker eyebrow">Research desk · explicit public-web queries</div>
-        <h1 className="page-title">
-          <KineticText as="span" trigger="view">Search the living web.</KineticText>
-        </h1>
-        <p className="page-intro">
-          Every answer is staged and structured: the search trace, a cited summary with the key points spelled out,
-          then the extraction pipeline, the retrieved chunks, and what to do next.
-        </p>
-        <div className="research-note">
-          <FlaskConical size={14} aria-hidden="true" />
-          <span>
-            These queries go out to Exa and Firecrawl through this machine’s server — the query text only. Your learning
-            record, journal, and evidence never leave this device.
-          </span>
+    <div className="content research-desk">
+      <div className="dashboard-heading">
+        <div>
+          <div className="eyebrow">FOLLOW YOUR CURIOSITY</div>
+          <h1>
+            Better questions. Clearer sources
+            <span className="greeting-dot">.</span>
+          </h1>
+          <p>A research desk connected to what you’re learning.</p>
         </div>
+        <span className="mini-icon">
+          <Sparkles size={23} />
+        </span>
       </div>
-
-      <PromptBar busy={busy} onSend={(text, deep) => void runTurn(text, deep)} />
-
-      <div className="mt-6 flex flex-col gap-10" aria-live="polite">
-        {turns.map((turn) => (
-          <section key={turn.id} className="flex flex-col gap-4" aria-label={`Research turn: ${turn.query}`}>
-            {/* user turn */}
-            <div className="flex justify-end pl-14" style={{ animation: "fade-up 300ms cubic-bezier(0.23,1,0.32,1) both" }}>
-              <div className="rounded-xl bg-field px-3 py-1.5 text-[13px] leading-[1.4] text-ink shadow-hairline">
-                {turn.deep ? "★ " : ""}
-                {turn.query}
-              </div>
-            </div>
-
-            {turn.phase === "error" ? (
-              <div className="research-error" role="alert">
-                <strong>Research pipeline unavailable.</strong>
-                <p style={{ margin: "8px 0 0" }}>{turn.error ?? "The request failed."}</p>
-                {(turn.error ?? "").includes("not configured") && (
-                  <p style={{ margin: "10px 0 0" }}>
-                    Add <code className="mono">EXA_API_KEY</code> and <code className="mono">FIRECRAWL_API_KEY</code> to
-                    <code className="mono"> .env.local</code> in the Meridian folder and restart the server. Everything
-                    else in Meridian keeps working without them.
-                  </p>
-                )}
-              </div>
-            ) : (
-              <>
-                <ThinkingState
-                  query={turn.query}
-                  rows={thinkingRows(turn)}
-                  working={turn.phase === "thinking"}
-                  onSettled={() => {
-                    if (turn.phase === "searched") startAnswer(turn.id, turn.results);
-                  }}
-                />
-
-                {/* the summary — cited lead paragraph streams, then the key points list */}
-                {(turn.phase === "answering" || turn.phase === "done") && turn.lead && (
-                  <StreamingText
-                    lead={turn.lead}
-                    citeAfter={turn.citeAfter}
-                    points={turn.points}
-                    sourcesCount={turn.results.length}
-                    followUps={turn.followUps}
-                    onFollowUp={(followUp) => void runTurn(followUp, false)}
-                    onCopy={() => void navigator.clipboard?.writeText(answerTextOf(turn)).catch(() => {})}
-                    onRetry={() => void runTurn(turn.query, turn.deep)}
-                    onSources={() => {
-                      const first = turn.results.find((result) => result.url)?.url;
-                      if (first) window.open(first, "_blank", "noreferrer");
-                    }}
-                    onSettled={() => patchTurn(turn.id, { phase: "done" })}
-                  />
-                )}
-
-                {/* then the sources — pipeline, extracted chunks, and what to do next */}
-                {turn.phase === "done" && (
-                  <div className="flex flex-col gap-5" style={{ animation: "fade-up 400ms cubic-bezier(0.23,1,0.32,1) both" }}>
-                    <ToolChips
-                      rows={toolRows(turn)}
-                      chips={sourceChips(turn)}
-                      summary={`${toolRows(turn).length} steps · ${turn.results.length} sources`}
-                      running={turn.extractingUrls.length > 0}
-                    />
-                    {turn.results.some((result) => result.markdown) && (
-                      <ContextCards chunks={chunks(turn)} total={turn.results.length} />
-                    )}
-                    <RecommendationCard
-                      question="Where should this answer go next?"
-                      options={recommendationOptions(turn)}
-                      onConfirm={(option) => onConfirmRecommendation(turn, option)}
-                    />
-                    <SelectionActions
-                      claim={claimOf(turn)}
-                      onExplain={(selection) => void runTurn(selection, false)}
-                      onInstruct={(instruction, selection) => void runTurn(`${instruction}: ${selection}`, false)}
-                    />
-                  </div>
-                )}
-              </>
-            )}
-          </section>
-        ))}
-
-        {turns.length === 0 && (
-          <div className="lx-empty" style={{ marginTop: 30 }}>
-            <RiveFrame label="Idle orbit animation" scrollBound />
-            <div>
-              <strong>The desk is quiet.</strong>
-              <p className="hint">Ask a question above — you’ll see the search trace, the extractions, the chunks, and a cited answer.</p>
-            </div>
-          </div>
-        )}
-
-        <div className="flex flex-col gap-3">
-          <p className="eyebrow">Local history</p>
-          <ResearchHistory
-            queries={history}
-            sources={savedSources}
-            onPick={(query, deep) => void runTurn(query, deep)}
+      <section className="obs-panel research-composer">
+        <div className="research-modes">
+          <button
+            className={mode === "library" ? "active" : ""}
+            onClick={() => changeMode("library")}
+          >
+            <BookOpen size={16} />
+            Your library
+          </button>
+          <button
+            className={mode === "web" ? "active" : ""}
+            disabled={!webAvailable}
+            onClick={() => changeMode("web")}
+          >
+            <Globe2 size={16} />
+            Web sources{!webAvailable && <span>Not connected</span>}
+          </button>
+        </div>
+        <form onSubmit={search}>
+          <Search size={20} />
+          <input
+            aria-label="Research query"
+            placeholder={
+              mode === "library"
+                ? "Find a concept, course, or tool…"
+                : "What would you like to understand?"
+            }
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            maxLength={400}
           />
+          <button className="button-primary" disabled={busy} type="submit">
+            {busy ? "Searching…" : "Explore"}
+            <ArrowRight size={17} />
+          </button>
+        </form>
+        <div className="research-helper">
+          <span>
+            {mode === "library"
+              ? `${shelf.length} curated resources from your curriculum`
+              : "Exa discovers sources · Firecrawl extracts the original text"}
+          </span>
+          {!webAvailable && (
+            <Link href="/settings">
+              Connect web research
+              <ArrowUpRight size={12} />
+            </Link>
+          )}
         </div>
+      </section>
+      <div className="research-suggestions">
+        {["Python", "machine learning", "mathematics", "AI safety"].map(
+          topic => (
+            <button
+              key={topic}
+              onClick={() => {
+                setQuery(topic);
+                if (mode === "library") {
+                  setResults(
+                    shelf.filter(s =>
+                      `${s.title} ${s.highlights.join(" ")} ${s.phase}`
+                        .toLowerCase()
+                        .includes(topic)
+                    )
+                  );
+                  setSubmitted(topic);
+                }
+              }}
+            >
+              {topic}
+              <ArrowUpRight size={12} />
+            </button>
+          )
+        )}
       </div>
+      {error && (
+        <div className="research-notice" role="alert">
+          {error}
+          <button
+            className="text-link"
+            onClick={() => setError("")}
+            aria-label="Dismiss error"
+          >
+            <X size={15} />
+          </button>
+        </div>
+      )}
+      {busy && (
+        <section className="obs-panel research-loading" role="status">
+          <span className="mini-icon">
+            <Globe2 size={22} />
+          </span>
+          <div>
+            <h2>Following the sources.</h2>
+            <p>
+              Discovering relevant pages and reading their contents. This can
+              take a minute.
+            </p>
+          </div>
+          <button
+            className="button-secondary"
+            onClick={() => controller.current?.abort()}
+          >
+            Stop search
+          </button>
+        </section>
+      )}
+      <div className="research-results-heading">
+        <h2>
+          {submitted
+            ? `Sources for “${submitted}”`
+            : mode === "library"
+              ? "A shelf worth exploring"
+              : "Your next discovery starts with a question"}
+        </h2>
+        <span>{results.length} sources</span>
+      </div>
+      <div className={`research-layout ${selected ? "has-excerpt" : ""}`}>
+        <div className="research-source-list">
+          {results.map((source, index) => (
+            <article className="obs-panel research-source" key={source.url}>
+              <div className="source-topline">
+                <span>
+                  {String(index + 1).padStart(2, "0")}{" "}
+                  <span className="label-dot">/</span>{" "}
+                  {new URL(source.url).hostname.replace(/^www\./, "")}
+                </span>
+                <a
+                  href={source.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={`Open ${source.title}`}
+                >
+                  <ArrowUpRight size={18} />
+                </a>
+              </div>
+              <h3>
+                <a href={source.url} target="_blank" rel="noreferrer">
+                  {source.title}
+                </a>
+              </h3>
+              <p>
+                {source.highlights[0] ??
+                  "Open this source to read the original."}
+              </p>
+              <div className="research-source-actions">
+                <span className="pill-violet">
+                  {source.phase ?? "WEB SOURCE"}
+                </span>
+                {source.markdown && (
+                  <button
+                    className="text-link"
+                    onClick={() => setSelected(source)}
+                  >
+                    Read extraction
+                  </button>
+                )}
+                <button
+                  className="text-link accent-link"
+                  onClick={() => save(source)}
+                >
+                  {saved.includes(source.url) ||
+                  state.evidence?.some(e => e.url === source.url) ? (
+                    <>
+                      <Check size={14} />
+                      Saved
+                    </>
+                  ) : (
+                    <>
+                      <Bookmark size={14} />
+                      Save source
+                    </>
+                  )}
+                </button>
+              </div>
+              {source.scrapeError && (
+                <p className="source-extraction-note">
+                  Extraction unavailable. You can still open the original
+                  source.
+                </p>
+              )}
+            </article>
+          ))}
+          {!results.length && !busy && (
+            <div className="empty-state">
+              <BookOpen size={28} />
+              <p>
+                {submitted
+                  ? "No matches yet. Try a broader concept or a course name."
+                  : "Search the web to collect relevant sources here."}
+              </p>
+            </div>
+          )}
+        </div>
+        {selected && (
+          <aside className="obs-panel extracted-reader">
+            <div className="panel-heading">
+              <h2>Source extraction</h2>
+              <button
+                className="icon-button"
+                aria-label="Close extraction"
+                onClick={() => setSelected(null)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="markdown-body">
+              <h3>{selected.title}</h3>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  a: ({ children, ...props }) => (
+                    <a {...props} target="_blank" rel="noreferrer">
+                      {children}
+                    </a>
+                  ),
+                  img: () => null,
+                }}
+              >
+                {selected.markdown}
+              </ReactMarkdown>
+            </div>
+            <a
+              className="text-link accent-link"
+              href={selected.url}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Read original
+              <ArrowUpRight size={16} />
+            </a>
+          </aside>
+        )}
+      </div>
+      <p className="research-footnote">
+        Read critically. Excerpts are source material; they haven’t been
+        independently verified.
+      </p>
     </div>
   );
 }

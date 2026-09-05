@@ -1,0 +1,268 @@
+.focus-room {
+  position: relative;
+  isolation: isolate;
+  min-height: calc(100dvh - 65px);
+  padding: 24px 36px;
+  background: #0b0912;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.focus-room:fullscreen {
+  overflow-y: auto;
+  min-height: 100dvh;
+}
+.focus-room-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(#0b0912c9, #0b0912e8),
+    url("/assets/meridian-observatory.png") center/cover;
+  opacity: 0.7;
+}
+.focus-room-top,
+.focus-room-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  font-size: 12px;
+  color: #a58ab7;
+}
+.focus-room-top .text-link {
+  font-size: 13px;
+}
+.focus-room-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 650px;
+  width: 100%;
+  margin: 32px auto 22px;
+}
+.focus-room-body > .eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  color: #a58dc1;
+}
+.focus-room-body h1 {
+  font-family: var(--font-display), serif;
+  font-size: 36px;
+  font-weight: 400;
+  letter-spacing: -0.6px;
+  margin: 14px 0 12px;
+}
+.focus-room-body > p {
+  font-size: 14px;
+  color: #a08bb3;
+}
+.focus-presets {
+  display: flex;
+  gap: 4px;
+  margin: 16px 0 22px;
+  border: 1px solid #a58cb628;
+  border-radius: 7px;
+  padding: 4px;
+  background: #a58cb605;
+}
+.focus-presets button {
+  background: none;
+  border: 0;
+  border-radius: 4px;
+  padding: 6px 17px;
+  font-size: 12px;
+  color: #a993b8;
+}
+.focus-presets button.active {
+  background: #b6a3fa20;
+  color: #d8c4f1;
+}
+.focus-clock {
+  width: 290px;
+  height: 290px;
+  position: relative;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(#a58cb607, transparent);
+  box-shadow:
+    0 0 0 15px #a58cb603,
+    0 0 0 16px #a58cb612;
+}
+.focus-clock > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+.focus-clock circle {
+  fill: none;
+  stroke-width: 1;
+}
+.clock-track {
+  stroke: #65527444;
+}
+.clock-progress {
+  stroke: #c4a5ec;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear;
+}
+.focus-clock.running {
+  box-shadow:
+    0 0 0 15px #a58cb605,
+    0 0 0 16px #a58cb61c,
+    0 0 70px #a58cb60a;
+}
+.focus-time {
+  font-size: 70px;
+  font-weight: 250;
+  letter-spacing: -3px;
+  color: #e5d9f3;
+  line-height: 1.3;
+}
+.focus-clock-label {
+  display: block;
+  color: #a08ab1;
+  font: 400 9px var(--font-mono);
+  letter-spacing: 2px;
+  margin-top: 7px;
+}
+.focus-intent {
+  margin: 28px 0 20px;
+  width: min(390px, 100%);
+}
+.focus-intent > span {
+  display: block;
+  font-size: 12px;
+  color: #a591b6;
+  margin-bottom: 7px;
+}
+.focus-intent input {
+  width: 100%;
+  font-size: 14px;
+  border: 0;
+  border-bottom: 1px solid #aa8dbe30;
+  border-radius: 0;
+  background: transparent;
+  text-align: center;
+  color: #d5c2e4;
+  padding: 8px 6px;
+}
+.focus-intent input::placeholder {
+  color: #8b779d;
+}
+.focus-controls {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.focus-controls .button-primary {
+  min-width: 174px;
+}
+.focus-finish {
+  margin-top: 17px;
+  font-size: 12px;
+}
+.focus-message {
+  font-size: 11px !important;
+  margin: 24px 0 14px;
+  min-height: 20px;
+}
+.ambient-status {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  font-size: 11px;
+  color: #907da1;
+}
+.focus-room-bottom {
+  margin-top: auto;
+  font-size: 11px;
+  border-top: 1px solid #ad8bc519;
+  padding-top: 19px;
+}
+.focus-room-bottom > a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.is-focus .obs-footer {
+  display: none;
+}
+@media (max-width: 760px) {
+  .focus-room {
+    padding: 20px;
+    min-height: calc(100dvh - 57px);
+  }
+  .focus-room-top .text-link {
+    font-size: 11px;
+  }
+  .focus-room-body {
+    margin-top: 30px;
+  }
+  .focus-room-body h1 {
+    font-size: 30px;
+  }
+  .focus-room-body > p {
+    font-size: 13px;
+  }
+  .focus-clock {
+    width: 245px;
+    height: 245px;
+  }
+  .focus-time {
+    font-size: 61px;
+  }
+  .focus-room-bottom {
+    font-size: 10px;
+  }
+}
+
+/* Keep the clock and primary controls together on laptop-height displays. */
+@media (max-height: 850px) and (min-width: 601px) {
+  .focus-room {
+    padding-top: 14px;
+    padding-bottom: 14px;
+  }
+  .focus-room-body {
+    margin-top: 14px;
+    margin-bottom: 12px;
+  }
+  .focus-room-body h1 {
+    font-size: 30px;
+    margin: 7px 0;
+  }
+  .focus-room-body > p {
+    margin-bottom: 6px;
+  }
+  .focus-presets {
+    margin: 10px 0 16px;
+  }
+  .focus-clock {
+    width: 200px;
+    height: 200px;
+  }
+  .focus-time {
+    font-size: 53px;
+  }
+  .focus-intent {
+    margin: 17px 0 13px;
+  }
+  .focus-intent > span {
+    margin-bottom: 3px;
+  }
+  .focus-message {
+    margin: 12px 0 5px;
+  }
+  .focus-finish {
+    margin-top: 9px;
+  }
+  .focus-room-bottom {
+    padding-top: 11px;
+  }
+}

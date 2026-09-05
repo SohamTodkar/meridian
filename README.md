@@ -1,151 +1,141 @@
-# Meridian
+# Meridian — your study observatory
 
-Meridian is a local-first learning path: **one useful action, an honest
-proof, and a record that stays on this device.** It combines the source
-curriculum (65 guided sessions across four capability-gated phases), guided
-sessions with evidence checks, an adaptive daily plan, weekly review,
-journal, evidence vault, spaced recall, the DSA parallel track, a curated
-library — and, new in this release, a 3D shader-driven home, a unified
-searchable library explorer, and an optional **Research desk** powered by
-Exa + Firecrawl.
+A complete personal learning workspace for Soham: a clear AI/ML learning map, focused study sessions, daily habits, notes, evidence, recall, and a server-backed learning record.
 
-The philosophy is unchanged: no accounts, no tracking, no personal data
-leaving the machine. Learning records live in this browser (IndexedDB with a
-localStorage fallback) and export/import as verified JSON envelopes.
+The original 65 guided sessions, four phases, curriculum, resources, and study protocols are preserved. The interface and persistence architecture have been rebuilt.
 
-## Quick start (Windows)
+## Start locally
 
-The simplest option remains double-clicking `start.cmd` if you have one, or:
+Use Node.js 22.13+ (Node 24 recommended) and pnpm 11.19.
 
-```bat
-cd northstar-hq
-pnpm install
+```sh
+pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Then open <http://localhost:3000>. For a production run:
-
-```bat
-pnpm build
-pnpm start
-```
-
-Everything installs and runs from the D: drive — dependencies resolve through
-pnpm with the store pinned to `D:\pnpm-store` via `.npmrc` in this folder.
-
-> Node/npm alternative: `npm install` and `npm run dev` work too; pnpm is
-> what this repo is pinned with (`pnpm-lock.yaml`).
+Open http://localhost:3000. Development records save on the **server** in `.meridian/workspace.json`, with atomic file replacement and revision checks. They do not live in localStorage or IndexedDB. This development adapter is deliberately unavailable on Vercel; production uses PostgreSQL.
 
 ## Deploy on Vercel
 
-The repo is Vercel-ready as-is — Next.js is auto-detected, `pnpm` is picked
-up from `pnpm-lock.yaml`, and `pnpm build` is the build command. One step is
-yours to do:
+### 1. Make the website public — remove the Vercel login wall
 
-1. Import the repository at [vercel.com/new](https://vercel.com/new).
-2. Add the environment variables (Project → Settings → Environment
-   Variables) so the Research desk works in production:
-   - `EXA_API_KEY` — from <https://dashboard.exa.ai/api-keys>
-   - `FIRECRAWL_API_KEY` — from <https://firecrawl.dev>
-3. Deploy. Without the keys every learning feature still works — only the
-   research desk returns its configuration notice.
+In the existing Vercel project, open **Settings → Deployment Protection → Vercel Authentication**. Disable Vercel Authentication for the production site and save. On plans where the available selector is “Standard Protection,” keep preview deployments protected while excluding production, or turn the toggle off if all deployment URLs should be public.
 
-Node 20.9+ is pinned via `engines` in `package.json`. Learning data is
-browser-local by design, so nothing else needs provisioning.
+Test the production domain in an incognito window. The page should open without redirecting to `vercel.com/login`.
 
-## What ships in this release
+**This is a Vercel dashboard setting. Source code and `vercel.json` cannot disable it.** No authenticated Vercel connection was available while this rebuild was prepared, so the setting on your existing deployment still needs to be changed.
 
-### The rebuilt presentation engine
+New visitors open an interactive **visitor preview** of the curriculum. Preview changes stay in memory for that visit. Your real progress, journal, evidence, backups, and paid research endpoints stay private. Use **Owner sign-in** (or `/login/`) to open your saved workspace. Turning off Vercel Authentication does not make your study records public.
 
-| System | Where | What it does |
-| --- | --- | --- |
-| Scroll telemetry | `src/lib/scroll.ts`, `src/lib/motion.ts` | One external store feeds `--scroll-progress` to CSS, the canvases and the HUD — zero React re-renders per frame |
-| Smooth scrolling | `src/components/motion/smooth-scroll.tsx` | Lenis, disabled under `prefers-reduced-motion`, native keyboard/selection untouched, pauses while modals are open, smooth in-page anchors |
-| Kinetic typography | `src/components/motion/kinetic-text.tsx` | Per-character roll with 0.02 s stagger, hover or scroll-triggered, aria-safe |
-| Page transitions | `src/components/motion/page-curtain.tsx` | Two-panel transform-only wipe with a route-specific loading label and a 3 s stall guard |
-| WebGL hero | `src/components/webgl/` | Multi-layer parallax through a depth map, alpha-map cutout, roughness-modulated directional lighting, contact shadow, a glTF PBR overlay revealed by a simplex-noise fluid-blob mask (rendered to a 256² target), astrolabe rings and phase beacons |
-| Phase geometry | `src/components/webgl/phase-geometry-viewer.tsx` | Scroll-bound quaternion rotation, drag inspection, per-phase solids |
-| Library explorer | `src/components/library-explorer.tsx` | Fuse.js fuzzy search over every resource/community/tool/book, multi-tag filters, three sort modes, card grid with clip-path ellipse hover reveal, infinite scroll, quiet empty state |
-| Command palette | `src/components/command-palette.tsx` | Fuse.js fuzzy matching across sessions, curriculum, resources and routes |
-| Session detail | `src/components/session-runner.tsx` | Reading-progress bar, sticky section TOC with scrollspy, Web Share API (clipboard fallback) |
-| Rive + scroll drawing | `src/components/rive/` | Lazy WASM vector animations and a compositor-driven scroll-bound line drawing |
-| Easter eggs & HUD | `src/components/easter-eggs-and-hud.tsx` | Styled console banner, F1 telemetry HUD with *measured* FPS/scroll/storage/GPU numbers, Konami-code confetti, hotkeys |
-| SEO | `src/app/layout.tsx`, `sitemap.ts`, `robots.ts` | Per-route metadata, Open Graph, JSON-LD (`WebApplication`), sitemap and robots |
+Official reference: https://vercel.com/docs/deployment-protection/methods-to-protect-deployments/vercel-authentication
 
-### The Research desk (Exa + Firecrawl)
+### 2. Connect PostgreSQL
 
-`/research` in the sidebar runs the combined pipeline:
+1. In Vercel, open the project's Storage tab and add a **Neon Postgres** database through the marketplace.
+2. Connect it to the project and ensure its connection string is available as `DATABASE_URL`.
+3. Use a separate database/branch for preview environments so previews never write to production study data.
 
-```
-query → Exa neural search (top sources)
-      → Firecrawl extraction (markdown + metadata, per URL, parallel)
-      → rendered in the Meridian interface
+The Neon driver uses HTTP and works with Vercel Functions. The database has one owner document, an optimistic revision number, 50 saved recovery versions, and durable rate-limit buckets. The database credential stays on the server.
+
+### 3. Set up private owner sign-in
+
+Run this on your own computer:
+
+```sh
+pnpm setup:auth
 ```
 
-- API routes: `POST /api/research/search` (10 min cache),
-  `/scrape` (1 h cache), `/combined` (uncached by design), `/parse`
-  (hosted documents; local-file upload is deliberately not exposed — Meridian
-  never uploads your files).
-- Security: keys live in `.env.local` on the server only; every input is
-  Zod-validated; each IP is rate-limited to 30 requests/minute
-  (`src/lib/rate-limit.ts`); errors carry trace IDs.
-- Privacy boundary: the research desk sends **only the query you type** to
-  public-web services. Your learning record never leaves the device, with or
-  without keys.
+Choose a password with at least 12 characters. Input is hidden. The script writes a salted scrypt password hash and a random session signing secret to the ignored `.env.local` file; it does not store the password.
 
-To enable it:
+Copy these values from `.env.local` into **Vercel → Settings → Environment Variables**:
 
-```bat
-copy .env.local.example .env.local
-:: then edit .env.local with your keys and restart (pnpm dev)
+- `MERIDIAN_PASSWORD_HASH`
+- `MERIDIAN_SESSION_SECRET`
+- `DATABASE_URL` from Neon
+- `NEXT_PUBLIC_SITE_URL` set to your production URL
+
+Keep these out of Git and chat. Do not prefix secrets with `NEXT_PUBLIC_`. Running the auth setup again rotates the session secret, signing out existing sessions.
+
+### 4. Build and deploy
+
+Commit and push the rebuilt source to the repository's `main` branch before redeploying. Vercel builds the GitHub source, so local changes must be pushed first.
+
+Import or reconnect `SohamTodkar/meridian` in Vercel. Next.js is the framework, with the repository root as the Root Directory. The included `vercel.json` uses:
+
+```sh
+pnpm install --frozen-lockfile
+pnpm build:vercel
 ```
 
-## Assets
+The deploy build applies the idempotent PostgreSQL migration **before** building the application. Migration failure stops the deployment. No database connection produces a public visitor preview with an owner setup screen; it does not pretend to save study data.
 
-All heavy assets are local under `public/assets/` (no CDN):
-`textures/` (base, depth, alpha, roughness, normal — generated),
-`models/meridian-knot.glb` (generated), `rive/meridian-orb.riv`.
-Regenerate the procedural ones any time with `pnpm assets`.
+For manual migration after adding `DATABASE_URL` to `.env.local`:
 
-## Keyboard shortcuts
-
-- `Ctrl/Cmd + K` — command palette (`↑↓` move, `Enter` open, `Esc` close)
-- `F1` or `?` — telemetry HUD (live measured numbers)
-- `Ctrl/Cmd + Shift + L` — jump to the daily log
-- ↑ ↑ ↓ ↓ ← → ← → B A — you know what to do
-
-## Your data and backups
-
-Progress is stored by your browser on this device. Use
-**Settings → Portable state → Export JSON** regularly, and
-**Preview restore** to import a backup (Meridian, Operations Cockpit, and
-Northstar/Guided Learning exports are all supported as legacy imports;
-every restore is previewed before anything changes).
-
-## Tests
-
-```bat
-pnpm test        # 87 tests: curriculum invariants, state, persistence,
-                 # render contracts, rate limiting, caches, scroll store
-pnpm typecheck   # strict TypeScript
-pnpm lint        # ESLint
+```sh
+pnpm db:migrate
 ```
 
-## Project layout
+After deployment: open `/api/health/` to verify database availability, sign in at `/login/`, make a small study change, and reload to confirm it persists.
 
+## The study workflow
+
+- **Overview:** next session, adaptive daily plan, real study statistics, recall queue, and a quick daily reflection.
+- **Learning map:** interactive four-phase trajectory, every session, search within a phase, capability progress, resources, and checkpoints. Later phases can be inspected on the map; prerequisite checks protect their study sequence.
+- **Guided sessions:** step-by-step exercises, hints, a wall-clock timer, resumable drafts, evidence checks, and reflection. Completion updates the learning map, journal, evidence vault, and recall queue.
+- **Focus room:** 25/50/90-minute blocks (or a custom default in Settings), pause/resume, fullscreen, optional locally synthesized brown noise, and automatic time recording. Time uses wall-clock deltas so throttled background tabs do not slow the timer. Timers pause on leaving a guided session; standalone focus blocks are recorded when leaving the focus room.
+- **Daily rhythm:** morning, afternoon, and evening habit checklists, adjustable times, and the original study field guide.
+- **Library:** curated phase resources, tier filters, course search, status tracking, personal notes, communities, tools, and books.
+- **Research:** curated library search works immediately. Optional web research discovers sources with Exa, extracts pages with Firecrawl, displays original source text, and saves chosen sources to the evidence vault. Extracts are clearly labeled source material, not fabricated AI summaries.
+- **Journal, recall, review, evidence, DSA:** the original working tools share the new visual system and server persistence.
+
+Press **Ctrl/Cmd + K** to find sessions, resources, pages, and actions. Motion respects system accessibility preferences and the “Keep things still” setting.
+
+## Optional live research
+
+Add `EXA_API_KEY` and `FIRECRAWL_API_KEY` to the server environment. Both are required for the combined web pipeline. Without them, the curated library remains fully usable. External credentials are not included and the live services cannot be verified without your keys.
+
+Only authenticated owners can call research endpoints. Inputs are validated and bounded. Rate limits are stored in PostgreSQL, shared across serverless instances. Upstream calls have timeouts and partial extraction failures leave discovered source links usable.
+
+## Saving and recovery
+
+Changes save after a short debounce, with a visible save indicator. A save is confirmed only after the server accepts it. If the network fails, your edits remain in the open tab and a recovery banner offers retry and export. Keep that tab open until saving succeeds or download its backup.
+
+Concurrent edits use optimistic revision checks. A stale tab cannot silently replace a newer saved version: export its edits, then load the server version. On returning to a clean tab, Meridian checks for newer server data. Concurrent writes are intentionally resolved explicitly rather than automatically merging potentially conflicting study records.
+
+**Settings → Recovery history** lists recent versions. Restoring creates a new version, retaining the previous one within the 50-version retention window. These snapshots supplement your exports and database-provider backups; they are not long-term unlimited archives.
+
+**Settings → Export backup** creates a checksummed JSON backup. **Import backup** previews the contents before replacing your record. **Find old browser data** reads the prior Meridian's storage only after you request it. Because browser storage is origin-specific, this works when opening the new app at the same original domain/browser. Otherwise import an export from the old site. No old browser records are automatically uploaded.
+
+## Verification and pipelines
+
+```sh
+pnpm typecheck
+pnpm lint
+pnpm test
+pnpm build
+pnpm test:api
 ```
-src/
-  app/            routes, API handlers, sitemap/robots, global styles
-  components/
-    motion/       smooth scroll, curtain, kinetic text, progress, reveal
-    webgl/        engine, shaders, textures, hero, phase geometry
-    rive/         lazy Rive frame + scroll-bound drawing
-    research/     research desk UI
-    …             shell, views, palette, HUD
-  lib/            scroll store, motion, performance, env, rate limit,
-                  caches, Exa/Firecrawl services
-  data/           curriculum model + resource library (unchanged, tested)
-  state/          local-first store, persistence, selectors (unchanged)
-public/assets/    generated textures, glb model, rive file
-scripts/          asset generator (node scripts/generate-assets.mjs)
+
+The GitHub Actions workflow runs all of these for pushes to `main` and pull requests. `test:api` starts a production server on port 3108 using an isolated temporary development database and randomly generated test credentials. It verifies public routes, private API boundaries, login, save, stale-write rejection, invalid input, recovery versions, restore, and logout, then removes its test data. It never accesses your real database.
+
+Database integration tests execute the real SQL migration and queries against PGlite (PostgreSQL compiled to WASM), including revision conflicts and durable rate limits. Vercel/Neon connectivity and paid research still require deployment-environment validation.
+
+Vercel's native Git integration provides deployment previews and production deployments. Enable branch protection on GitHub to require “Meridian checks / verify” before merging. Workflow and Vercel configuration are included; they run only after the code is pushed and the Vercel project is connected.
+
+## Project map
+
+```text
+src/app/                 Next.js pages, styling, and route handlers
+src/components/          Observatory shell, dashboard, map, focus, study tools
+src/state/cloud.ts       Server-authoritative save and conflict coordination
+src/state/store.ts       Learning actions and state (no browser persistence)
+src/state/persistence.ts Explicit legacy browser import adapter
+src/lib/server/          Authentication, validation, database, integration tests
+src/data/                Preserved curriculum and resource library
+database/                Versioned PostgreSQL migration
+scripts/                 Authentication setup, migration, deployment, HTTP tests
+.github/workflows/       CI verification pipeline
+public/assets/           Original black-hole artwork and existing assets
 ```
+
+Design and generated-asset provenance are recorded in `docs/observatory-design.md`.

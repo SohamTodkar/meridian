@@ -42,7 +42,11 @@ function buildCatalog(): CatalogEntry[] {
         entries.push({
           id: resource.id,
           name: resource.name,
-          description: resource.why ?? resource.role ?? resource.note ?? "Use as a deliberate part of this phase.",
+          description:
+            resource.why ??
+            resource.role ??
+            resource.note ??
+            "Use as a deliberate part of this phase.",
           kind: "resource",
           phase: plan.phaseLabel,
           tier: tier.label.replace("Tier ", "T"),
@@ -109,13 +113,15 @@ type SortMode = "relevance" | "name" | "rating";
 
 export function LibraryExplorer({ initialPhase }: { initialPhase?: string }) {
   const catalog = useMemo(() => buildCatalog(), []);
-  const resourceStates = useMeridianStore((state) => state.resourceStates);
-  const setResourceState = useMeridianStore((store) => store.setResourceState);
+  const resourceStates = useMeridianStore(state => state.resourceStates);
+  const setResourceState = useMeridianStore(store => store.setResourceState);
 
   const [query, setQuery] = useState("");
   // Seed with the phase the reader is already studying — the explorer opens
   // on their shelf; clearing the filter reveals the whole library.
-  const [activeTags, setActiveTags] = useState<string[]>(initialPhase ? [initialPhase] : []);
+  const [activeTags, setActiveTags] = useState<string[]>(
+    initialPhase ? [initialPhase] : []
+  );
   const [sort, setSort] = useState<SortMode>("relevance");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -135,18 +141,21 @@ export function LibraryExplorer({ initialPhase }: { initialPhase?: string }) {
   const results = useMemo(() => {
     let base: CatalogEntry[];
     if (query.trim()) {
-      base = fuse.search(query.trim(), { limit: 200 }).map((hit) => hit.item);
+      base = fuse.search(query.trim(), { limit: 200 }).map(hit => hit.item);
     } else {
       base = catalog;
     }
     const filtered = activeTags.length
-      ? base.filter((entry) => activeTags.every((tag) => entry.tags.includes(tag)))
+      ? base.filter(entry => activeTags.every(tag => entry.tags.includes(tag)))
       : base;
     switch (sort) {
       case "name":
         return [...filtered].sort((a, b) => a.name.localeCompare(b.name));
       case "rating":
-        return [...filtered].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0) || a.name.localeCompare(b.name));
+        return [...filtered].sort(
+          (a, b) =>
+            (b.rating ?? 0) - (a.rating ?? 0) || a.name.localeCompare(b.name)
+        );
       default:
         return filtered;
     }
@@ -167,12 +176,12 @@ export function LibraryExplorer({ initialPhase }: { initialPhase?: string }) {
     const sentinel = sentinelRef.current;
     if (!sentinel || typeof IntersectionObserver === "undefined") return;
     const observer = new IntersectionObserver(
-      (entries) => {
+      entries => {
         if (entries[0]?.isIntersecting) {
-          setVisibleCount((count) => Math.min(count + PAGE_SIZE, results.length));
+          setVisibleCount(count => Math.min(count + PAGE_SIZE, results.length));
         }
       },
-      { rootMargin: "600px 0px" },
+      { rootMargin: "600px 0px" }
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
@@ -182,7 +191,11 @@ export function LibraryExplorer({ initialPhase }: { initialPhase?: string }) {
   const hasMore = visibleCount < results.length;
 
   const toggleTag = (tag: string) => {
-    setActiveTags((current) => (current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag]));
+    setActiveTags(current =>
+      current.includes(tag)
+        ? current.filter(item => item !== tag)
+        : [...current, tag]
+    );
   };
 
   return (
@@ -190,24 +203,41 @@ export function LibraryExplorer({ initialPhase }: { initialPhase?: string }) {
       <div className="section-heading">
         <div>
           <div className="eyebrow">Unified explorer</div>
-          <h2 id="explorer-heading" className="section-title">Search everything on the shelf.</h2>
+          <h2 id="explorer-heading" className="section-title">
+            Search everything on the shelf.
+          </h2>
         </div>
-        <span className="muted mono" style={{ fontSize: 11 }}>{results.length} of {catalog.length} entries</span>
+        <span className="muted mono" style={{ fontSize: 11 }}>
+          {results.length} of {catalog.length} entries
+        </span>
       </div>
-      <p className="hint" style={{ marginBottom: 16 }}>Fuzzy search across every phase resource, community, tool and book. Combine tags to narrow; your personal state on each resource stays on this device.</p>
+      <p className="hint" style={{ marginBottom: 16 }}>
+        Fuzzy search across every phase resource, community, tool and book.
+        Combine tags to narrow; your personal state on each resource saves with
+        your workspace.
+      </p>
 
       <div className="lx-toolbar">
         <div className="lx-search-row">
           {/* Clean search field — the SearchList pattern: icon, input, clear. */}
           <div className="lx-search">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--muted)"
+              strokeWidth="2"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
               <circle cx="11" cy="11" r="7" />
               <path d="M21 21l-4.3-4.3" />
             </svg>
             <input
               type="search"
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={event => setQuery(event.target.value)}
               placeholder="Search the shelf…"
               aria-label="Search the library"
             />
@@ -219,14 +249,30 @@ export function LibraryExplorer({ initialPhase }: { initialPhase?: string }) {
                 className="lx-clear"
                 style={{ animation: "fade-in 150ms ease-out both" }}
               >
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  aria-hidden="true"
+                >
                   <path d="M18 6L6 18M6 6l12 12" />
                 </svg>
               </button>
             )}
           </div>
-          <label className="sr-only" htmlFor="lx-sort">Sort results</label>
-          <select id="lx-sort" className="lx-sort" value={sort} onChange={(event) => setSort(event.target.value as SortMode)}>
+          <label className="sr-only" htmlFor="lx-sort">
+            Sort results
+          </label>
+          <select
+            id="lx-sort"
+            className="lx-sort"
+            value={sort}
+            onChange={event => setSort(event.target.value as SortMode)}
+          >
             <option value="relevance">Sort · Relevance</option>
             <option value="name">Sort · Name A–Z</option>
             <option value="rating">Sort · Rating high → low</option>
@@ -245,29 +291,56 @@ export function LibraryExplorer({ initialPhase }: { initialPhase?: string }) {
             </button>
           ))}
           {activeTags.length > 0 && (
-            <button type="button" className="quiet-link" onClick={() => setActiveTags([])}>Clear filters</button>
+            <button
+              type="button"
+              className="quiet-link"
+              onClick={() => setActiveTags([])}
+            >
+              Clear filters
+            </button>
           )}
         </div>
       </div>
 
       <div className="lx-grid" role="list" aria-label="Library results">
-        {visible.map((entry) => {
-          const personal = entry.kind === "resource" ? resourceStates?.[entry.id] : undefined;
+        {visible.map(entry => {
+          const personal =
+            entry.kind === "resource" ? resourceStates?.[entry.id] : undefined;
           return (
-            <article className="lx-card" role="listitem" key={entry.id} aria-label={entry.name}>
+            <article
+              className="lx-card"
+              role="listitem"
+              key={entry.id}
+              aria-label={entry.name}
+            >
               <div className="lx-card-reveal" aria-hidden="true" />
               <div className="lx-card-body">
                 <div className="lx-card-topline">
-                  <span className="resource-guidance">{entry.kind} · {entry.tier}</span>
+                  <span className="resource-guidance">
+                    {entry.kind} · {entry.tier}
+                  </span>
                   {entry.rating !== undefined && (
-                    <span className="resource-rating" aria-label={`${entry.rating} out of 5 rating`}>
-                      {"●".repeat(entry.rating)}<span className="muted">{"·".repeat(5 - entry.rating)}</span>
+                    <span
+                      className="resource-rating"
+                      aria-label={`${entry.rating} out of 5 rating`}
+                    >
+                      {"●".repeat(entry.rating)}
+                      <span className="muted">
+                        {"·".repeat(5 - entry.rating)}
+                      </span>
                     </span>
                   )}
                 </div>
                 <h3 className="lx-card-title">
                   {entry.url ? (
-                    <a href={entry.url} target="_blank" rel="noreferrer">{entry.name} <ExternalLink size={11} style={{ verticalAlign: "middle" }} aria-hidden="true" /></a>
+                    <a href={entry.url} target="_blank" rel="noreferrer">
+                      {entry.name}{" "}
+                      <ExternalLink
+                        size={11}
+                        style={{ verticalAlign: "middle" }}
+                        aria-hidden="true"
+                      />
+                    </a>
                   ) : (
                     entry.name
                   )}
@@ -278,16 +351,31 @@ export function LibraryExplorer({ initialPhase }: { initialPhase?: string }) {
                   <span>{entry.tier}</span>
                 </div>
                 <div className="lx-tags">
-                  {entry.tags.map((tag) => <span className="lx-tag-chip" key={tag}>{tag}</span>)}
+                  {entry.tags.map(tag => (
+                    <span className="lx-tag-chip" key={tag}>
+                      {tag}
+                    </span>
+                  ))}
                 </div>
                 {entry.kind === "resource" && (
                   <div className="lx-status">
-                    <label className="sr-only" htmlFor={`lx-state-${entry.id}`}>Your state for {entry.name}</label>
+                    <label className="sr-only" htmlFor={`lx-state-${entry.id}`}>
+                      Your state for {entry.name}
+                    </label>
                     <select
                       id={`lx-state-${entry.id}`}
                       value={personal?.status ?? "saved"}
-                      className={personal?.status === "completed" ? "is-completed" : ""}
-                      onChange={(event) => setResourceState(entry.id, event.target.value as "saved" | "active" | "completed" | "paused", personal?.note)}
+                      className={
+                        personal?.status === "completed" ? "is-completed" : ""
+                      }
+                      onChange={event =>
+                        setResourceState(
+                          entry.id,
+                          event.target.value as
+                            "saved" | "active" | "completed" | "paused",
+                          personal?.note
+                        )
+                      }
                     >
                       <option value="saved">Saved</option>
                       <option value="active">Active</option>
@@ -303,9 +391,21 @@ export function LibraryExplorer({ initialPhase }: { initialPhase?: string }) {
       </div>
 
       {results.length === 0 && (
-        <div className="lx-empty" role="status" style={{ animation: "fade-in 250ms ease-out both" }}>
+        <div
+          className="lx-empty"
+          role="status"
+          style={{ animation: "fade-in 250ms ease-out both" }}
+        >
           <span className="lx-empty-mark" aria-hidden="true">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            >
               <circle cx="11" cy="11" r="7" />
               <path d="M21 21l-4.3-4.3" />
             </svg>
@@ -314,14 +414,27 @@ export function LibraryExplorer({ initialPhase }: { initialPhase?: string }) {
             <strong>No results found</strong>
             <p className="hint">Adjust your search to try again.</p>
           </div>
-          <button className="button-secondary" type="button" onClick={() => { setQuery(""); setActiveTags([]); }}>
+          <button
+            className="button-secondary"
+            type="button"
+            onClick={() => {
+              setQuery("");
+              setActiveTags([]);
+            }}
+          >
             Reset search
           </button>
         </div>
       )}
 
-      {hasMore && <div className="lx-sentinel" ref={sentinelRef} aria-hidden="true" />}
-      {hasMore && <p className="hint" style={{ textAlign: "center" }}>Loading more of {results.length - visibleCount} remaining…</p>}
+      {hasMore && (
+        <div className="lx-sentinel" ref={sentinelRef} aria-hidden="true" />
+      )}
+      {hasMore && (
+        <p className="hint" style={{ textAlign: "center" }}>
+          Loading more of {results.length - visibleCount} remaining…
+        </p>
+      )}
     </section>
   );
 }

@@ -2,22 +2,32 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const css = readFileSync(resolve(process.cwd(), "src/app/globals.css"), "utf8");
-const shell = readFileSync(resolve(process.cwd(), "src/components/app-shell.tsx"), "utf8");
+const css = readFileSync(
+  resolve(process.cwd(), "src/app/observatory.css"),
+  "utf8"
+);
+const shell = readFileSync(
+  resolve(process.cwd(), "src/components/app-shell.tsx"),
+  "utf8"
+);
 
 describe("sidebar navigation reachability", () => {
   it("keeps the full navigation rail independently scrollable", () => {
-    expect(css).toMatch(/\.rail\s*\{[\s\S]*?overflow-y:\s*auto[\s\S]*?overscroll-behavior:\s*contain/);
+    expect(css).toMatch(/\.obs-sidebar\s*\{[^}]*overflow-y:\s*auto/);
   });
 
-  it("keeps the rail wheel-scrollable independently of the smooth-scroll engine", () => {
-    expect(shell).toContain('data-lenis-prevent');
+  it("uses native scrolling without an intercepting smooth-scroll engine", () => {
+    const layout = readFileSync(
+      resolve(process.cwd(), "src/app/layout.tsx"),
+      "utf8"
+    );
+    expect(layout).not.toContain("SmoothScrollProvider");
   });
 
   it("retains direct links to the lower navigation sections", () => {
     // The nav register is data-driven; the entries below must stay reachable.
-    expect(shell).toContain('label: "Portfolio", href: "/portfolio"');
-    expect(shell).toContain('label: "Library & network", href: "/library"');
-    expect(shell).toContain('label: "Research desk", href: "/research"');
+    for (const route of ["/portfolio", "/library", "/research", "/focus"]) {
+      expect(shell).toMatch(new RegExp(`href:\\s*"${route}"`));
+    }
   });
 });

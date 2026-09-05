@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import "./observatory.css";
+import "./observatory-interiors.css";
+import "./focus.css";
+import "./research.css";
 import { AppShellLoader } from "@/components/app-shell-loader";
 import { OfflineRuntime } from "@/components/offline-runtime";
-import { SmoothScrollProvider } from "@/components/motion/smooth-scroll";
-import { PageTransitionCurtain } from "@/components/motion/page-curtain";
-import { EasterEggsAndHud } from "@/components/easter-eggs-and-hud";
 
 const inter = localFont({
   src: "../fonts/Inter.var.woff2",
@@ -33,11 +34,11 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Meridian — a local-first learning path",
+    default: "Meridian — your study observatory",
     template: "%s · Meridian",
   },
   description:
-    "Meridian is a local-first learning path: one useful action, an honest proof, and a record that stays on your device. Guided sessions, evidence vault, recall practice, and a research desk.",
+    "A personal observatory for deep work. Follow your AI and machine learning path, study with intention, and keep your progress connected.",
   applicationName: "Meridian",
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: "Meridian", statusBarStyle: "black" },
@@ -45,11 +46,11 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "Meridian",
-    title: "Meridian — a local-first learning path",
-    description: "One useful action, an honest proof, and a record that stays on this device.",
+    title: "Meridian — your study observatory",
+    description: "Your learning path. Your focus. One place to move forward.",
     url: siteUrl,
   },
-  robots: { index: process.env.NODE_ENV === "production", follow: true },
+  robots: { index: false, follow: false },
 };
 
 export const viewport: Viewport = { themeColor: "#0a0a0a" };
@@ -62,7 +63,7 @@ const structuredData = {
   applicationCategory: "EducationalApplication",
   operatingSystem: "Web",
   description:
-    "A local-first learning path: guided sessions, capability gates, evidence vault, spaced recall, and an Exa + Firecrawl research desk.",
+    "A personal study workspace with a guided learning map, focus sessions, evidence vault, spaced recall, and research tools.",
   offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
   featureList: [
     "Guided learning sessions with proof-backed completion",
@@ -79,20 +80,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetBrains.variable} ${fraunces.variable}`}>
+    <html
+      lang="en"
+      className={`${inter.variable} ${jetBrains.variable} ${fraunces.variable}`}
+    >
       <body>
         <script
           type="application/ld+json"
           // Static, developer-authored structured data.
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
-        <SmoothScrollProvider>
-          <PageTransitionCurtain />
-          <EasterEggsAndHud />
-          <AppShellLoader>{children}</AppShellLoader>
-          <OfflineRuntime />
-          <div id="modal-root" />
-        </SmoothScrollProvider>
+        <AppShellLoader>{children}</AppShellLoader>
+        <OfflineRuntime />
+        <div id="modal-root" />
       </body>
     </html>
   );

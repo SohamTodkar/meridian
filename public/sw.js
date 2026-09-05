@@ -1,25 +1,15 @@
-const CACHE = "meridian-shell-v2";
-const CORE = ["/", "/manifest.webmanifest", "/meridian-icon.svg"];
-
-self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(CORE)).then(() => self.skipWaiting()));
-});
-
-self.addEventListener("activate", (event) => {
-  event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key)))).then(() => self.clients.claim()));
-});
-
-self.addEventListener("fetch", (event) => {
-  if (event.request.method !== "GET" || new URL(event.request.url).origin !== self.location.origin) return;
-  if (event.request.mode === "navigate") {
-    event.respondWith(fetch(event.request).catch(() => caches.match("/")).then((response) => response || new Response("Meridian is offline.", { status: 503 })));
-    return;
-  }
-  event.respondWith(caches.match(event.request).then((cached) => cached || fetch(event.request).then((response) => {
-    if (response.ok && new URL(event.request.url).pathname.startsWith("/_next/")) {
-      const copy = response.clone();
-      void caches.open(CACHE).then((cache) => cache.put(event.request, copy));
-    }
-    return response;
-  }).catch(() => caches.match("/"))));
+// Retirement worker for pre-observatory installations. Never intercept requests.
+self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("activate", event => {
+  event.waitUntil(
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(
+        keys
+          .filter(key => key.startsWith("meridian-shell-"))
+          .map(key => caches.delete(key))
+      );
+      await self.registration.unregister();
+    })()
+  );
 });

@@ -9,21 +9,21 @@
 
 :root {
   /* Ink scale (surfaces, dark → raised) */
-  --ink: #08090a;
-  --panel: #0d0f10;
-  --panel-raised: #121415;
-  --panel-soft: #17191a;
+  --ink: #090a10;
+  --panel: #11121b;
+  --panel-raised: #171822;
+  --panel-soft: #1d1e2b;
   /* Bone scale (content, bright → faint) */
-  --bone: #eeeae2;
-  --bone-dim: #c4c0b8;
-  --muted: #969997;
-  --faint: #676d6c;
+  --bone: #f1f0f7;
+  --bone-dim: #c5c5d3;
+  --muted: #989aac;
+  --faint: #7e8095;
   --ghost: #3e4342;
   /* Signals */
-  --done: #83968d;
+  --done: #8ad9bd;
   --behind: #9b8778;
-  --rule: #26292a;
-  --rule-strong: #3d4142;
+  --rule: #252633;
+  --rule-strong: #414258;
   /* Geometry */
   --rail: 252px;
   --measure: 940px;

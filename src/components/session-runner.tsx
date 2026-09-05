@@ -1,7 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Check, Clock3, Lightbulb, Pause, Play, RotateCcw, Share2 } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  Clock3,
+  Lightbulb,
+  Pause,
+  Play,
+  RotateCcw,
+  Share2,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { model } from "@/data";
 import { getLocalDateKey } from "@/state/date";
@@ -10,12 +20,18 @@ import { useMeridianStore } from "@/state/store";
 import { TickBox } from "./tick-box";
 import { DisplayPair } from "./labeled-item";
 import { ProgressionLock } from "./progression-lock";
-import { KineticText } from "./motion/kinetic-text";
+
 import { ScrollProgress } from "./motion/scroll-progress";
+import { elapsedSeconds } from "@/lib/focus-time";
+import { saveCloud } from "@/state/cloud";
 
 /** Share a session through the Web Share API with a clipboard fallback. */
 async function shareSession(title: string, text: string): Promise<string> {
-  const payload = { title: `Meridian — ${title}`, text, url: window.location.href };
+  const payload = {
+    title: `Meridian — ${title}`,
+    text,
+    url: window.location.href,
+  };
   try {
     if (navigator.share) {
       await navigator.share(payload);
@@ -26,7 +42,9 @@ async function shareSession(title: string, text: string): Promise<string> {
     // fall through to clipboard
   }
   try {
-    await navigator.clipboard.writeText(`${payload.title}\n${text}\n${payload.url}`);
+    await navigator.clipboard.writeText(
+      `${payload.title}\n${text}\n${payload.url}`
+    );
     return "Link copied to clipboard.";
   } catch {
     return "Sharing is unavailable in this browser.";
@@ -39,12 +57,12 @@ function useScrollSpy(ids: string[]): string | null {
   useEffect(() => {
     if (typeof IntersectionObserver === "undefined") return;
     const observer = new IntersectionObserver(
-      (entries) => {
+      entries => {
         for (const entry of entries) {
           if (entry.isIntersecting) setActive(entry.target.id);
         }
       },
-      { rootMargin: "-30% 0px -55% 0px" },
+      { rootMargin: "-30% 0px -55% 0px" }
     );
     for (const id of ids) {
       const element = document.getElementById(id);
@@ -56,70 +74,198 @@ function useScrollSpy(ids: string[]): string | null {
 }
 
 export function SessionRunner({ sessionId }: { sessionId: string }) {
-  const session = model.phases.flatMap((phase) => phase.sessions).find((item) => item.id === sessionId);
-  const phase = model.phases.find((item) => item.sessions.some((sessionItem) => sessionItem.id === sessionId));
+  const session = model.phases
+    .flatMap(phase => phase.sessions)
+    .find(item => item.id === sessionId);
+  const phase = model.phases.find(item =>
+    item.sessions.some(sessionItem => sessionItem.id === sessionId)
+  );
   const state = useMeridianStore();
-  const setStep = useMeridianStore((store) => store.setSessionStep);
-  const setTimer = useMeridianStore((store) => store.setTimer);
-  const recordTime = useMeridianStore((store) => store.recordTime);
-  const completeSession = useMeridianStore((store) => store.completeSession);
-  const toggleCheck = useMeridianStore((store) => store.toggleCheck);
-  const saveSessionAttempt = useMeridianStore((store) => store.saveSessionAttempt);
-  const discardSessionAttempt = useMeridianStore((store) => store.discardSessionAttempt);
-  const existingAttempt = session ? state.sessionAttempts?.[session.id] : undefined;
-  const [proofMode, setProofMode] = useState(Boolean(existingAttempt?.proofMode));
+  const setStep = useMeridianStore(store => store.setSessionStep);
+  const setTimer = useMeridianStore(store => store.setTimer);
+  const recordTime = useMeridianStore(store => store.recordTime);
+  const completeSession = useMeridianStore(store => store.completeSession);
+  const toggleCheck = useMeridianStore(store => store.toggleCheck);
+  const saveSessionAttempt = useMeridianStore(
+    store => store.saveSessionAttempt
+  );
+  const discardSessionAttempt = useMeridianStore(
+    store => store.discardSessionAttempt
+  );
+  const existingAttempt = session
+    ? state.sessionAttempts?.[session.id]
+    : undefined;
+  const [proofMode, setProofMode] = useState(
+    Boolean(existingAttempt?.proofMode)
+  );
   const [journal, setJournal] = useState(existingAttempt?.journal ?? "");
   const [confusion, setConfusion] = useState(existingAttempt?.confusion ?? "");
-  const [nextQuestion, setNextQuestion] = useState(existingAttempt?.nextQuestion ?? "");
+  const [nextQuestion, setNextQuestion] = useState(
+    existingAttempt?.nextQuestion ?? ""
+  );
   const [hintOpen, setHintOpen] = useState(false);
   const [shareMessage, setShareMessage] = useState("");
-  const [recoveryNotice, setRecoveryNotice] = useState(Boolean(existingAttempt));
+  const [recoveryNotice, setRecoveryNotice] = useState(
+    Boolean(existingAttempt)
+  );
   const progress = session ? state.sessions[session.id] : undefined;
-  const access = session && phase ? getSessionAccess(model, phase, session.id, state) : undefined;
-  const [seconds, setSeconds] = useState(existingAttempt?.timerSeconds ?? (state.timer.sessionId === sessionId ? state.timer.seconds : 0));
+  const access =
+    session && phase
+      ? getSessionAccess(model, phase, session.id, state)
+      : undefined;
+  const [seconds, setSeconds] = useState(
+    existingAttempt?.timerSeconds ??
+      (state.timer.sessionId === sessionId ? state.timer.seconds : 0)
+  );
 
   useEffect(() => {
     if (!state.timer.running) return undefined;
+    if (state.timer.sessionId !== sessionId) return undefined;
+    const startedAt = Date.now();
+    const base = state.timer.seconds;
+    let lastCheckpoint = base;
+    const checkpoint = (pause = false) => {
+      const current = useMeridianStore.getState();
+      if (current.timer.sessionId !== sessionId || !current.timer.running)
+        return;
+      const value = elapsedSeconds(base, startedAt, Date.now());
+      const delta = Math.max(0, value - (current.timer.recordedSeconds ?? 0));
+      if (delta > 0)
+        current.recordTime({
+          date: getLocalDateKey(new Date(), current.settings.timeZone),
+          seconds: delta,
+          source: "session",
+          sessionId,
+        });
+      current.setTimer({
+        sessionId,
+        running: !pause,
+        seconds: value,
+        recordedSeconds: value,
+      });
+      const attempt = current.sessionAttempts?.[sessionId];
+      if (attempt)
+        current.saveSessionAttempt({ ...attempt, timerSeconds: value });
+      lastCheckpoint = value;
+      void saveCloud();
+    };
     const interval = window.setInterval(() => {
-      setSeconds((value) => value + 1);
-    }, 1000);
-    return () => window.clearInterval(interval);
-  }, [state.timer.running]);
+      const value = elapsedSeconds(base, startedAt, Date.now());
+      setSeconds(value);
+      if (value - lastCheckpoint >= 15) checkpoint();
+    }, 250);
+    const visibility = () => {
+      if (document.visibilityState === "hidden") checkpoint();
+    };
+    document.addEventListener("visibilitychange", visibility);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", visibility);
+      checkpoint(true);
+    };
+    // Changes to displayed seconds must not restart the wall-clock anchor.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.timer.running, sessionId]);
 
   useEffect(() => {
-    if (session && access?.allowed) setStep(session.id, progress?.currentStep ?? 0);
+    if (session && access?.allowed)
+      setStep(session.id, progress?.currentStep ?? 0);
     // The step is intentionally initialized only when the session changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.id, access?.allowed]);
 
   const tocIds = proofMode
-    ? ["session-deliverable", "session-evidence", "session-reflection", "session-share"]
-    : ["session-overview", "session-steps", "session-controls", "session-share"];
+    ? [
+        "session-deliverable",
+        "session-evidence",
+        "session-reflection",
+        "session-share",
+      ]
+    : [
+        "session-overview",
+        "session-steps",
+        "session-controls",
+        "session-share",
+      ];
   const activeSection = useScrollSpy(tocIds);
 
   if (!session || !phase) {
-    return <div className="content"><div className="empty-state"><h1 className="section-title">Session not found.</h1><Link className="quiet-link" href="/">Return to Today</Link></div></div>;
+    return (
+      <div className="content">
+        <div className="empty-state">
+          <h1 className="section-title">Session not found.</h1>
+          <Link className="quiet-link" href="/">
+            Return to Today
+          </Link>
+        </div>
+      </div>
+    );
   }
-  if (!access?.allowed) return <ProgressionLock title={`Session: ${session.title}`} requirements={access?.requirements ?? []} overrideKey={sessionOverrideKey(session.id)} returnHref={`/path/${phase.id}?tab=sessions`} />;
+  if (!access?.allowed)
+    return (
+      <ProgressionLock
+        title={`Session: ${session.title}`}
+        requirements={access?.requirements ?? []}
+        overrideKey={sessionOverrideKey(session.id)}
+        returnHref={`/path/${phase.id}?tab=sessions`}
+      />
+    );
 
   const activeSession = session;
-  const currentStep = Math.min(progress?.currentStep ?? 0, session.steps.length - 1);
+  const currentStep = Math.min(
+    progress?.currentStep ?? 0,
+    session.steps.length - 1
+  );
   const complete = Boolean(progress?.completed);
-  const sessionOverride = state.progressionOverrides?.[sessionOverrideKey(session.id)];
-  const proofVerified = session.checks.every((_, index) => state.checks[`${session.id}.check.${index + 1}`]);
-  const formatTime = (total: number) => `${Math.floor(total / 60).toString().padStart(2, "0")}:${(total % 60).toString().padStart(2, "0")}`;
+  const sessionOverride =
+    state.progressionOverrides?.[sessionOverrideKey(session.id)];
+  const proofVerified = session.checks.every(
+    (_, index) => state.checks[`${session.id}.check.${index + 1}`]
+  );
+  const formatTime = (total: number) =>
+    `${Math.floor(total / 60)
+      .toString()
+      .padStart(2, "0")}:${(total % 60).toString().padStart(2, "0")}`;
   const today = getLocalDateKey(new Date(), state.settings.timeZone);
 
-  function persistAttempt(overrides: Partial<{ currentStep: number; proofMode: boolean; journal: string; confusion: string; nextQuestion: string; timerSeconds: number }> = {}) {
-    saveSessionAttempt({ sessionId: activeSession.id, currentStep: overrides.currentStep ?? currentStep, proofMode: overrides.proofMode ?? proofMode, journal: overrides.journal ?? journal, confusion: overrides.confusion ?? confusion, nextQuestion: overrides.nextQuestion ?? nextQuestion, timerSeconds: overrides.timerSeconds ?? seconds });
+  function persistAttempt(
+    overrides: Partial<{
+      currentStep: number;
+      proofMode: boolean;
+      journal: string;
+      confusion: string;
+      nextQuestion: string;
+      timerSeconds: number;
+    }> = {}
+  ) {
+    saveSessionAttempt({
+      sessionId: activeSession.id,
+      currentStep: overrides.currentStep ?? currentStep,
+      proofMode: overrides.proofMode ?? proofMode,
+      journal: overrides.journal ?? journal,
+      confusion: overrides.confusion ?? confusion,
+      nextQuestion: overrides.nextQuestion ?? nextQuestion,
+      timerSeconds: overrides.timerSeconds ?? seconds,
+    });
   }
 
   function recordElapsedTime() {
     if (state.timer.sessionId !== activeSession.id) return;
     const recordedSeconds = state.timer.recordedSeconds ?? 0;
     const elapsed = Math.max(0, seconds - recordedSeconds);
-    if (elapsed > 0) recordTime({ date: today, seconds: elapsed, source: "session", sessionId: activeSession.id });
-    setTimer({ sessionId: activeSession.id, running: false, seconds, recordedSeconds: seconds });
+    if (elapsed > 0)
+      recordTime({
+        date: today,
+        seconds: elapsed,
+        source: "session",
+        sessionId: activeSession.id,
+      });
+    setTimer({
+      sessionId: activeSession.id,
+      running: false,
+      seconds,
+      recordedSeconds: seconds,
+    });
   }
 
   function toggleTimer() {
@@ -131,13 +277,19 @@ export function SessionRunner({ sessionId }: { sessionId: string }) {
       sessionId: activeSession.id,
       running: true,
       seconds,
-      recordedSeconds: state.timer.sessionId === activeSession.id ? state.timer.recordedSeconds ?? 0 : 0,
+      recordedSeconds:
+        state.timer.sessionId === activeSession.id
+          ? (state.timer.recordedSeconds ?? 0)
+          : seconds,
     });
     persistAttempt({ timerSeconds: seconds });
   }
 
   async function onShare() {
-    const message = await shareSession(activeSession.title, activeSession.outcome);
+    const message = await shareSession(
+      activeSession.title,
+      activeSession.outcome
+    );
     setShareMessage(message);
     window.setTimeout(() => setShareMessage(""), 2600);
   }
@@ -145,16 +297,27 @@ export function SessionRunner({ sessionId }: { sessionId: string }) {
   function finish() {
     if (!session || !phase || !proofVerified) return;
     recordElapsedTime();
-    completeSession(activeSession.id, { id: `${activeSession.id}.${today}`, date: today, sessionId: activeSession.id, text: journal.trim() || activeSession.proof, confusion: confusion.trim() || undefined, nextQuestion: nextQuestion.trim() || undefined }, {
-      id: `evidence.${activeSession.id}.${today}`,
-      kind: "session-proof",
-      title: activeSession.proof,
-      note: journal.trim() || activeSession.outcome,
-      phaseId: phase.id,
-      sessionId: activeSession.id,
-      capability: phase.identity.northstarName,
-      proofStatus: "verified",
-    });
+    completeSession(
+      activeSession.id,
+      {
+        id: `${activeSession.id}.${today}`,
+        date: today,
+        sessionId: activeSession.id,
+        text: journal.trim() || activeSession.proof,
+        confusion: confusion.trim() || undefined,
+        nextQuestion: nextQuestion.trim() || undefined,
+      },
+      {
+        id: `evidence.${activeSession.id}.${today}`,
+        kind: "session-proof",
+        title: activeSession.proof,
+        note: journal.trim() || activeSession.outcome,
+        phaseId: phase.id,
+        sessionId: activeSession.id,
+        capability: phase.identity.northstarName,
+        proofStatus: "verified",
+      }
+    );
     setProofMode(false);
   }
 
@@ -175,15 +338,27 @@ export function SessionRunner({ sessionId }: { sessionId: string }) {
   const tocAside = (
     <nav className="runner-toc" aria-label="Session sections">
       {toc.map(([id, label]) => (
-        <a key={id} href={`#${id}`} className={activeSection === id ? "active" : ""}>{label}</a>
+        <a
+          key={id}
+          href={`#${id}`}
+          className={activeSection === id ? "active" : ""}
+        >
+          {label}
+        </a>
       ))}
     </nav>
   );
 
   const shareRow = (
     <div className="share-row" id="session-share">
-      <button className="button-secondary" type="button" onClick={onShare}><Share2 size={14} /> Share this session</button>
-      {shareMessage && <span className="hint" role="status">{shareMessage}</span>}
+      <button className="button-secondary" type="button" onClick={onShare}>
+        <Share2 size={14} /> Share this session
+      </button>
+      {shareMessage && (
+        <span className="hint" role="status">
+          {shareMessage}
+        </span>
+      )}
     </div>
   );
 
@@ -194,11 +369,18 @@ export function SessionRunner({ sessionId }: { sessionId: string }) {
         <div className="runner">
           <div className="eyebrow">Session complete</div>
           <h1 className="runner-title">You just proved something useful.</h1>
-          <p className="runner-outcome"><DisplayPair title="Outcome" description={session.outcome} /></p>
+          <p className="runner-outcome">
+            <DisplayPair title="Outcome" description={session.outcome} />
+          </p>
           <div className="action-panel">
             <div className="eyebrow">What this unlocked</div>
-            <p className="action-outcome" style={{ marginTop: 12 }}>The next session in {phase.identity.northstarName} is now available.</p>
-            <Link className="button-primary" href="/">Stop for today <Check size={15} aria-hidden="true" /></Link>
+            <p className="action-outcome" style={{ marginTop: 12 }}>
+              The next session in {phase.identity.northstarName} is now
+              available.
+            </p>
+            <Link className="button-primary" href="/">
+              Stop for today <Check size={15} aria-hidden="true" />
+            </Link>
           </div>
           {shareRow}
         </div>
@@ -207,7 +389,59 @@ export function SessionRunner({ sessionId }: { sessionId: string }) {
   }
 
   if (recoveryNotice && existingAttempt) {
-    return <div className="runner"><div className="eyebrow">Recovered local attempt</div><h1 className="runner-title">Pick up where you left off?</h1><p className="runner-outcome">Meridian saved your step, timer, and reflection draft on this device {new Date(existingAttempt.updatedAt).toLocaleString()}.</p><div className="action-panel"><div className="eyebrow">Session recovery</div><p id="recovery-choice-help" className="action-outcome">Resume your previous attempt, or discard only the recovery draft and begin this session again.</p><div className="runner-controls" role="group" aria-label="Recovered session choices" aria-describedby="recovery-choice-help"><button className="button-primary" type="button" onClick={() => setRecoveryNotice(false)}>Resume attempt <ArrowRight size={15} aria-hidden="true" /></button><button className="button-secondary" type="button" onClick={() => { discardSessionAttempt(activeSession.id); setProofMode(false); setJournal(""); setConfusion(""); setNextQuestion(""); setSeconds(0); setRecoveryNotice(false); }}>Discard draft</button></div></div></div>;
+    return (
+      <div className="runner">
+        <div className="eyebrow">Recovered session attempt</div>
+        <h1 className="runner-title">Pick up where you left off?</h1>
+        <p className="runner-outcome">
+          Meridian saved your step, timer, and reflection draft in your
+          workspace {new Date(existingAttempt.updatedAt).toLocaleString()}.
+        </p>
+        <div className="action-panel">
+          <div className="eyebrow">Session recovery</div>
+          <p id="recovery-choice-help" className="action-outcome">
+            Resume your previous attempt, or discard only the recovery draft and
+            begin this session again.
+          </p>
+          <div
+            className="runner-controls"
+            role="group"
+            aria-label="Recovered session choices"
+            aria-describedby="recovery-choice-help"
+          >
+            <button
+              className="button-primary"
+              type="button"
+              onClick={() => setRecoveryNotice(false)}
+            >
+              Resume attempt <ArrowRight size={15} aria-hidden="true" />
+            </button>
+            <button
+              className="button-secondary"
+              type="button"
+              onClick={() => {
+                discardSessionAttempt(activeSession.id);
+                setStep(activeSession.id, 0);
+                setTimer({
+                  sessionId: activeSession.id,
+                  running: false,
+                  seconds: 0,
+                  recordedSeconds: 0,
+                });
+                setProofMode(false);
+                setJournal("");
+                setConfusion("");
+                setNextQuestion("");
+                setSeconds(0);
+                setRecoveryNotice(false);
+              }}
+            >
+              Discard draft
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (proofMode) {
@@ -224,34 +458,108 @@ export function SessionRunner({ sessionId }: { sessionId: string }) {
                 <h2 className="proof-title">{session.proof}</h2>
               </div>
               <div id="session-evidence">
-                <div className="eyebrow" style={{ marginTop: 30 }}>Evidence check</div>
+                <div className="eyebrow" style={{ marginTop: 30 }}>
+                  Evidence check
+                </div>
                 <div className="checklist">
                   {session.checks.map((check, index) => {
                     const id = `${session.id}.check.${index + 1}`;
                     const checked = Boolean(state.checks[id]);
                     return (
                       <label className="checklist-label" key={id}>
-                        <TickBox className="evidence-check" checked={checked} label={`Evidence: ${check}`} onChange={() => toggleCheck(id)} />
+                        <TickBox
+                          className="evidence-check"
+                          checked={checked}
+                          label={`Evidence: ${check}`}
+                          onChange={() => toggleCheck(id)}
+                        />
                         <DisplayPair title={check} />
                       </label>
                     );
                   })}
                 </div>
-                <div className="stop-note"><strong>Stop here.</strong> {session.stop}</div>
+                <div className="stop-note">
+                  <strong>Stop here.</strong> {session.stop}
+                </div>
               </div>
               <div id="session-reflection">
-                <label className="eyebrow" htmlFor="session-journal" style={{ display: "block", marginTop: 30 }}>One line for your journal</label>
-                <textarea id="session-journal" className="journal-input" value={journal} onChange={(event) => { setJournal(event.target.value); persistAttempt({ journal: event.target.value }); }} placeholder="What did the evidence show?" />
+                <label
+                  className="eyebrow"
+                  htmlFor="session-journal"
+                  style={{ display: "block", marginTop: 30 }}
+                >
+                  One line for your journal
+                </label>
+                <textarea
+                  id="session-journal"
+                  className="journal-input"
+                  value={journal}
+                  onChange={event => {
+                    setJournal(event.target.value);
+                    persistAttempt({ journal: event.target.value });
+                  }}
+                  placeholder="What did the evidence show?"
+                />
                 <div className="reflection-grid">
-                  <label className="eyebrow" htmlFor="session-confusion">What still feels unclear?<textarea id="session-confusion" className="journal-input" value={confusion} onChange={(event) => { setConfusion(event.target.value); persistAttempt({ confusion: event.target.value }); }} placeholder="Name the concept or step without judging it." /></label>
-                  <label className="eyebrow" htmlFor="session-next-question">Question to retrieve later<textarea id="session-next-question" className="journal-input" value={nextQuestion} onChange={(event) => { setNextQuestion(event.target.value); persistAttempt({ nextQuestion: event.target.value }); }} placeholder="Ask a question future-you should answer unaided." /></label>
+                  <label className="eyebrow" htmlFor="session-confusion">
+                    What still feels unclear?
+                    <textarea
+                      id="session-confusion"
+                      className="journal-input"
+                      value={confusion}
+                      onChange={event => {
+                        setConfusion(event.target.value);
+                        persistAttempt({ confusion: event.target.value });
+                      }}
+                      placeholder="Name the concept or step without judging it."
+                    />
+                  </label>
+                  <label className="eyebrow" htmlFor="session-next-question">
+                    Question to retrieve later
+                    <textarea
+                      id="session-next-question"
+                      className="journal-input"
+                      value={nextQuestion}
+                      onChange={event => {
+                        setNextQuestion(event.target.value);
+                        persistAttempt({ nextQuestion: event.target.value });
+                      }}
+                      placeholder="Ask a question future-you should answer unaided."
+                    />
+                  </label>
                 </div>
-                {(confusion.trim() || nextQuestion.trim()) && <p className="hint">Meridian will add one local retrieval prompt when you complete this evidence.</p>}
-                {!proofVerified && <p className="proof-policy">Complete every evidence check before Meridian records this session as verified.</p>}
+                {(confusion.trim() || nextQuestion.trim()) && (
+                  <p className="hint">
+                    Meridian will add one retrieval prompt when you complete
+                    this evidence.
+                  </p>
+                )}
+                {!proofVerified && (
+                  <p className="proof-policy">
+                    Complete every evidence check before Meridian records this
+                    session as verified.
+                  </p>
+                )}
               </div>
               <div className="runner-controls">
-                <button className="button-secondary" type="button" onClick={() => { persistAttempt({ proofMode: false }); setProofMode(false); }}>Back to steps</button>
-                <button className="button-primary" type="button" disabled={!proofVerified} onClick={finish}>Complete session <ArrowRight size={15} aria-hidden="true" /></button>
+                <button
+                  className="button-secondary"
+                  type="button"
+                  onClick={() => {
+                    persistAttempt({ proofMode: false });
+                    setProofMode(false);
+                  }}
+                >
+                  Back to steps
+                </button>
+                <button
+                  className="button-primary"
+                  type="button"
+                  disabled={!proofVerified}
+                  onClick={finish}
+                >
+                  Complete session <ArrowRight size={15} aria-hidden="true" />
+                </button>
               </div>
               {shareRow}
             </div>
@@ -270,43 +578,136 @@ export function SessionRunner({ sessionId }: { sessionId: string }) {
           <div>
             <div className="runner-header" id="session-overview">
               <div>
-                <div className="page-kicker eyebrow">Phase {phase.identity.number + 1} · Session {session.id.replace(`${phase.id}s`, "")}</div>
-                <h1 className="runner-title">
-                  <KineticText as="span" trigger="view">
-                    {session.title}
-                  </KineticText>
-                </h1>
+                <div className="page-kicker eyebrow">
+                  Phase {phase.identity.number + 1} · Session{" "}
+                  {session.id.replace(`${phase.id}s`, "")}
+                </div>
+                <h1 className="runner-title">{session.title}</h1>
               </div>
-              <Link className="quiet-link" href="/">Exit runner</Link>
+              <Link className="quiet-link" href="/">
+                Exit runner
+              </Link>
             </div>
-            <p className="runner-outcome"><DisplayPair title="By the end" description={session.outcome} /></p>
-            {sessionOverride && <aside className="override-notice"><span className="eyebrow">Sequence override</span><span>Opened {new Date(sessionOverride.createdAt).toLocaleDateString()} · {sessionOverride.reason}</span></aside>}
+            <p className="runner-outcome">
+              <DisplayPair title="By the end" description={session.outcome} />
+            </p>
+            {sessionOverride && (
+              <aside className="override-notice">
+                <span className="eyebrow">Sequence override</span>
+                <span>
+                  Opened{" "}
+                  {new Date(sessionOverride.createdAt).toLocaleDateString()} ·{" "}
+                  {sessionOverride.reason}
+                </span>
+              </aside>
+            )}
             <div id="session-steps">
-              <div className="step-progress" aria-label={`Step ${currentStep + 1} of ${session.steps.length}`}>
-                {session.steps.map((step, index) => <span className={index <= currentStep ? "active" : ""} key={step} />)}
+              <div
+                className="step-progress"
+                aria-label={`Step ${currentStep + 1} of ${session.steps.length}`}
+              >
+                {session.steps.map((step, index) => (
+                  <span
+                    className={index <= currentStep ? "active" : ""}
+                    key={step}
+                  />
+                ))}
               </div>
               <div className="step-card">
-                <div className="step-number">STEP {String(currentStep + 1).padStart(2, "0")} / {String(session.steps.length).padStart(2, "0")}</div>
+                <div className="step-number">
+                  STEP {String(currentStep + 1).padStart(2, "0")} /{" "}
+                  {String(session.steps.length).padStart(2, "0")}
+                </div>
                 <p className="step-text">{session.steps[currentStep]}</p>
               </div>
               <div className="runner-controls">
-                <button className="button-secondary" type="button" disabled={currentStep === 0} onClick={() => { persistAttempt({ currentStep: currentStep - 1 }); setStep(session.id, currentStep - 1); }}><ArrowLeft size={15} /> Back</button>
+                <button
+                  className="button-secondary"
+                  type="button"
+                  disabled={currentStep === 0}
+                  onClick={() => {
+                    persistAttempt({ currentStep: currentStep - 1 });
+                    setStep(session.id, currentStep - 1);
+                  }}
+                >
+                  <ArrowLeft size={15} /> Back
+                </button>
                 {currentStep < session.steps.length - 1 ? (
-                  <button className="button-primary" type="button" onClick={() => { persistAttempt({ currentStep: currentStep + 1 }); setStep(session.id, currentStep + 1); }}>Next step <ArrowRight size={15} aria-hidden="true" /></button>
+                  <button
+                    className="button-primary"
+                    type="button"
+                    onClick={() => {
+                      persistAttempt({ currentStep: currentStep + 1 });
+                      setStep(session.id, currentStep + 1);
+                    }}
+                  >
+                    Next step <ArrowRight size={15} aria-hidden="true" />
+                  </button>
                 ) : (
-                  <button className="button-primary" type="button" onClick={() => { persistAttempt({ proofMode: true }); setProofMode(true); }}>Open proof <ArrowRight size={15} aria-hidden="true" /></button>
+                  <button
+                    className="button-primary"
+                    type="button"
+                    onClick={() => {
+                      persistAttempt({ proofMode: true });
+                      setProofMode(true);
+                    }}
+                  >
+                    Open proof <ArrowRight size={15} aria-hidden="true" />
+                  </button>
                 )}
               </div>
             </div>
             <div id="session-controls">
-              <div className="runner-controls" style={{ justifyContent: "flex-start", marginTop: 34 }}>
-                <button className="button-secondary" type="button" onClick={toggleTimer}>
-                  {state.timer.running ? <Pause size={14} /> : <Play size={14} />} {state.timer.running ? "Pause timer" : "Start silent timer"}
+              <div
+                className="runner-controls"
+                style={{ justifyContent: "flex-start", marginTop: 34 }}
+              >
+                <button
+                  className="button-secondary"
+                  type="button"
+                  onClick={toggleTimer}
+                >
+                  {state.timer.running ? (
+                    <Pause size={14} />
+                  ) : (
+                    <Play size={14} />
+                  )}{" "}
+                  {state.timer.running ? "Pause timer" : "Start silent timer"}
                 </button>
-                <span className="mono muted" style={{ padding: "11px 0", fontSize: 12 }}><Clock3 size={13} style={{ verticalAlign: "middle" }} /> {formatTime(seconds)} / {session.minutes}:00</span>
-                <button className="button-secondary" type="button" aria-label="Reset timer" onClick={() => { setSeconds(0); persistAttempt({ timerSeconds: 0 }); setTimer({ sessionId: session.id, running: false, seconds: 0, recordedSeconds: 0 }); }}><RotateCcw size={14} /></button>
+                <span
+                  className="mono muted"
+                  style={{ padding: "11px 0", fontSize: 12 }}
+                >
+                  <Clock3 size={13} style={{ verticalAlign: "middle" }} />{" "}
+                  {formatTime(seconds)} / {session.minutes}:00
+                </span>
+                <button
+                  className="button-secondary"
+                  type="button"
+                  aria-label="Reset timer"
+                  onClick={() => {
+                    setSeconds(0);
+                    persistAttempt({ timerSeconds: 0 });
+                    setTimer({
+                      sessionId: session.id,
+                      running: false,
+                      seconds: 0,
+                      recordedSeconds: 0,
+                    });
+                  }}
+                >
+                  <RotateCcw size={14} />
+                </button>
               </div>
-              <button className="button-secondary" type="button" style={{ marginTop: 24 }} onClick={() => setHintOpen((open) => !open)}><Lightbulb size={14} /> {hintOpen ? "Hide hint" : "Need a hint?"}</button>
+              <button
+                className="button-secondary"
+                type="button"
+                style={{ marginTop: 24 }}
+                onClick={() => setHintOpen(open => !open)}
+              >
+                <Lightbulb size={14} />{" "}
+                {hintOpen ? "Hide hint" : "Need a hint?"}
+              </button>
               {hintOpen && <p className="hint">{session.hint}</p>}
             </div>
             {shareRow}
