@@ -18,6 +18,7 @@ import { useMeridianStore } from "@/state/store";
 import { TickBox } from "./tick-box";
 import { DisplayPair } from "./labeled-item";
 import { ProgressionLock } from "./progression-lock";
+import { Reveal } from "./motion/reveal";
 
 type Tab = "overview" | "sessions" | "curriculum" | "resources" | "checkpoint";
 
@@ -209,7 +210,7 @@ function PhaseHubContent({ phaseId }: { phaseId: string }) {
       </nav>
 
       {tab === "overview" && (
-        <div className="overview-grid">
+        <Reveal className="overview-grid">
           <div className="info-block">
             <div className="eyebrow">Promise</div>
             <p>{phase.identity.promise}</p>
@@ -248,11 +249,11 @@ function PhaseHubContent({ phaseId }: { phaseId: string }) {
               ))}
             </ul>
           </div>
-        </div>
+        </Reveal>
       )}
 
       {tab === "sessions" && (
-        <div className="session-list">
+        <Reveal className="session-list">
           {phase.sessions.map((session, index) => {
             const done = Boolean(state.sessions[session.id]?.completed);
             const sessionAccess = getSessionAccess(
@@ -300,11 +301,11 @@ function PhaseHubContent({ phaseId }: { phaseId: string }) {
               </Link>
             );
           })}
-        </div>
+        </Reveal>
       )}
 
       {tab === "curriculum" && (
-        <div className="curriculum-group">
+        <Reveal className="curriculum-group">
           {phase.curriculum.map(section => (
             <CurriculumSectionView
               key={section.key}
@@ -315,11 +316,11 @@ function PhaseHubContent({ phaseId }: { phaseId: string }) {
               onChange={index => toggleCheck(`${section.key}.${index + 1}`)}
             />
           ))}
-        </div>
+        </Reveal>
       )}
 
       {tab === "resources" && (
-        <div className="resource-list">
+        <Reveal className="resource-list">
           {phase.resources.map(resource => (
             <article className="resource-row" key={resource.id}>
               <div>
@@ -352,11 +353,11 @@ function PhaseHubContent({ phaseId }: { phaseId: string }) {
               )}
             </article>
           ))}
-        </div>
+        </Reveal>
       )}
 
       {tab === "checkpoint" && (
-        <div className="section" style={{ marginTop: 28 }}>
+        <Reveal className="section" style={{ marginTop: 28 }}>
           <div className="action-panel" style={{ marginTop: 0 }}>
             <div className="eyebrow">What done means</div>
             <h2
@@ -411,7 +412,7 @@ function PhaseHubContent({ phaseId }: { phaseId: string }) {
               evidence cleared. The next phase is open.
             </p>
           )}
-        </div>
+        </Reveal>
       )}
     </div>
   );

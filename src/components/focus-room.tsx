@@ -219,6 +219,17 @@ export function FocusRoom() {
   return (
     <div className="focus-room" ref={frame}>
       <div className="focus-room-bg" />
+      <div className="focus-starfield" aria-hidden="true">
+        <span className="focus-star s1" />
+        <span className="focus-star s2" />
+        <span className="focus-star s3" />
+        <span className="focus-star s4" />
+        <span className="focus-star s5" />
+        <span className="focus-star s6" />
+        <span className="focus-star s7" />
+        <span className="focus-star s8" />
+      </div>
+      <div className="focus-vignette" aria-hidden="true" />
       <div className="focus-room-top">
         <Link href="/" className="text-link">
           <Orbit size={18} />
@@ -263,6 +274,7 @@ export function FocusRoom() {
           ))}
         </div>
         <div className={`focus-clock ${running ? "running" : ""}`}>
+          <span className="clock-halo" aria-hidden="true" />
           <svg viewBox="0 0 320 320" aria-hidden="true">
             <circle cx="160" cy="160" r="151" className="clock-track" />
             <circle

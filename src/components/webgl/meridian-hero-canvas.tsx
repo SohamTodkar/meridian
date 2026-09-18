@@ -18,29 +18,58 @@ import { damp } from "@/lib/utils";
  *
  * A real raytraced black hole replaces the sigil: per-pixel geodesic
  * integration bends light around the event horizon, the Keplerian
- * accretion disk is lensed into the iconic halo, Doppler beaming brightens
- * the approaching side, and escaping rays land on a lensed starfield.
+ * accretion disk is lensed into the iconic halo, true relativistic Doppler
+ * beaming (delta^3) brightens and blueshifts the approaching side, and
+ * escaping rays land on a lensed three-layer starfield with a faint
+ * milky-way band. A sharp pale-gold photon ring glows at r = 1.5.
  *
- * Interaction contract: the camera orbits with the cursor (lerped, never
- * re-rendered through React), pointer-velocity energy drives the disk
- * turbulence, and an adaptive resolution guard drops the pixel ratio once
- * if a device can't hold the frame budget. The loop pauses offscreen,
+ * Interaction contract: a slow cinematic auto-orbit drifts beneath smooth
+ * damped cursor parallax (lerped, never re-rendered through React), the
+ * camera breathes gently in elevation, pointer-velocity energy drives the
+ * disk turbulence, and an adaptive resolution guard drops the pixel ratio
+ * once if a device can't hold the frame budget. The loop pauses offscreen,
  * renders a single static frame under reduced motion, and the whole
  * pipeline disposes on unmount.
+ *
+ * Completion starburst: dispatch a window event —
+ *   window.dispatchEvent(new Event("meridian:session-complete"))
+ * and the core erupts in a radial gold shimmer (uBurst ramps up, holds,
+ * decays over ~3.2s). Programmatic alternative: pass `burstSignal` and
+ * increment it whenever a session completes.
  */
+
+export const SESSION_COMPLETE_EVENT = "meridian:session-complete";
+const BURST_HOLD_MS = 650;
+const BURST_RISE_MS = 420;
+const BURST_DECAY_MS = 2600;
 
 interface MeridianHeroCanvasProps {
   phaseProgress?: number;
   activePhaseNumber?: number;
+  /** Increment to trigger the completion starburst programmatically. */
+  burstSignal?: number;
 }
 
 export function MeridianHeroCanvas({
   phaseProgress = 0,
   activePhaseNumber = 1,
+  burstSignal,
 }: MeridianHeroCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const burstRef = useRef<{ value: number; startedAt: number }>({ value: 0, startedAt: -Infinity });
+  const progressRef = useRef(phaseProgress);
   const [failed, setFailed] = useState<"webgl" | "context" | null>(null);
+
+  useEffect(() => {
+    progressRef.current = phaseProgress;
+  }, [phaseProgress]);
+
+  useEffect(() => {
+    if (typeof burstSignal === "number" && burstSignal > 0) {
+      burstRef.current.startedAt = performance.now();
+    }
+  }, [burstSignal]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -74,6 +103,8 @@ export function MeridianHeroCanvas({
         uCamMatrix: { value: new THREE.Matrix3() },
         uFov: { value: Math.tan((52 * Math.PI) / 360) },
         uEnergy: { value: 0 },
+        uBurst: { value: 0 },
+        uProgress: { value: 0 },
       },
       depthTest: false,
       depthWrite: false,
@@ -91,18 +122,23 @@ export function MeridianHeroCanvas({
     const basis = new THREE.Matrix3();
 
     function updateCamera(time: number) {
-      const azimuth = pointer.sx * 0.42 + time * 0.008;
-      const elevation = BASE_ELEVATION - pointer.sy * 0.2;
+      // Slow cinematic auto-orbit drifting beneath the cursor parallax.
+      const azimuth = pointer.sx * 0.42 + time * 0.02;
+      // Elevation breathes gently on its own slow sine.
+      const elevation = BASE_ELEVATION + Math.sin(time * 0.11) * 0.045 - pointer.sy * 0.2;
+      // Progress pushes the camera slightly closer as the journey advances.
+      const distance = BASE_DISTANCE * (1.0 - progressRef.current * 0.14);
       camPos.set(
-        Math.sin(azimuth) * Math.cos(elevation) * BASE_DISTANCE,
-        Math.sin(elevation) * BASE_DISTANCE,
-        Math.cos(azimuth) * Math.cos(elevation) * BASE_DISTANCE,
+        Math.sin(azimuth) * Math.cos(elevation) * distance,
+        Math.sin(elevation) * distance,
+        Math.cos(azimuth) * Math.cos(elevation) * distance,
       );
       m.lookAt(camPos, target, THREE.Object3D.DEFAULT_UP);
       basis.setFromMatrix4(m);
       (material.uniforms.uCamPos.value as THREE.Vector3).copy(camPos);
       (material.uniforms.uCamMatrix.value as THREE.Matrix3).copy(basis);
     }
+
 
     const syncResolution = () => {
       const width = container.clientWidth;
@@ -129,6 +165,10 @@ export function MeridianHeroCanvas({
       setFailed("context");
       stop();
     });
+    const onSessionComplete = () => {
+      burstRef.current.startedAt = performance.now();
+    };
+    window.addEventListener(SESSION_COMPLETE_EVENT, onSessionComplete);
 
     /* Frame loop with a one-way adaptive resolution guard. -------------- */
     const clock = new THREE.Clock();
@@ -140,11 +180,27 @@ export function MeridianHeroCanvas({
       pointer.sx = damp(pointer.sx, pointer.x, 0.0015, deltaMs);
       pointer.sy = damp(pointer.sy, pointer.y, 0.0015, deltaMs);
       pointer.energy *= 0.94;
+
+      // Starburst envelope: fast rise, short hold, long golden decay.
+      const burst = burstRef.current;
+      const sinceBurst = performance.now() - burst.startedAt;
+      if (sinceBurst < BURST_RISE_MS) {
+        burst.value = sinceBurst / BURST_RISE_MS;
+      } else if (sinceBurst < BURST_RISE_MS + BURST_HOLD_MS) {
+        burst.value = 1;
+      } else {
+        const decayT = (sinceBurst - BURST_RISE_MS - BURST_HOLD_MS) / BURST_DECAY_MS;
+        burst.value = Math.max(0, 1 - decayT);
+      }
+
       material.uniforms.uTime.value = time;
       material.uniforms.uEnergy.value = pointer.energy;
+      material.uniforms.uBurst.value = burst.value;
+      material.uniforms.uProgress.value = Math.min(1, Math.max(0, progressRef.current / 100));
       updateCamera(time);
       renderer.render(scene, camera);
     };
+
 
     let unsubscribeFrame: (() => void) | null = null;
     function stop() {
@@ -178,6 +234,7 @@ export function MeridianHeroCanvas({
 
     return () => {
       stop();
+      window.removeEventListener(SESSION_COMPLETE_EVENT, onSessionComplete);
       pointerHandle.dispose();
       visibilityHandle.dispose();
       resizeHandle.dispose();
@@ -204,3 +261,4 @@ export function MeridianHeroCanvas({
     </div>
   );
 }
+

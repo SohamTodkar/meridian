@@ -134,9 +134,14 @@ export async function readJson(
   }
 }
 export function apiError(error: unknown) {
-  if (error instanceof ApiError)
-    return Response.json({ error: error.message }, { status: error.status });
+  // Every API error carries a request id so client reports can be matched
+  // to server logs.
   const traceId = crypto.randomUUID().slice(0, 8);
+  if (error instanceof ApiError)
+    return Response.json(
+      { error: error.message, traceId },
+      { status: error.status, headers: { "x-request-id": traceId } }
+    );
   console.error(
     `[meridian:${traceId}]`,
     error instanceof Error ? error.name : "Unknown error"
@@ -147,6 +152,6 @@ export function apiError(error: unknown) {
         "Meridian could not reach your database. Your unsaved work is still in this tab.",
       traceId,
     },
-    { status: 503 }
+    { status: 503, headers: { "x-request-id": traceId } }
   );
 }

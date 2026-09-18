@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import Image from "next/image";
+import dynamic from "next/dynamic";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -21,8 +21,12 @@ import {
   Target,
   Timer,
 } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
 import { useState } from "react";
 import { model } from "@/data";
+import { CountUp } from "./motion/count-up";
+import { Magnetic } from "./motion/magnetic";
+import { Reveal } from "./motion/reveal";
 import { getLocalDateKey, getWeekStartKey, shiftDateKey } from "@/state/date";
 import {
   getActivePhase,
@@ -31,11 +35,33 @@ import {
   getLearningMinutes,
   getNextAction,
   getOverallProgress,
+  getPhaseProgress,
   getStreak,
   getWeekMinutes,
 } from "@/state/selectors";
 import { useMeridianStore } from "@/state/store";
 import { TickBox } from "./tick-box";
+
+/**
+ * The Gargantua hero is client-only WebGL. Until it hydrates — or if the
+ * bundle ever fails — the section reads as a calm static gradient with the
+ * full copy and CTA intact, so the dashboard never blocks on the GPU.
+ */
+const MeridianHeroCanvas = dynamic(
+  () =>
+    import("@/components/webgl/meridian-hero-canvas").then(
+      mod => mod.MeridianHeroCanvas
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        className="meridian-hero-canvas-container gargantua-loading"
+        aria-hidden="true"
+      />
+    ),
+  }
+);
 
 export function TodayView() {
   const state = useMeridianStore();
@@ -43,6 +69,7 @@ export function TodayView() {
   const active = getActivePhase(model, state);
   const next = getNextAction(model, state);
   const overall = getOverallProgress(model, state);
+  const activeProgress = getPhaseProgress(model, active, state);
   const session = model.phases
     .flatMap(p => p.sessions)
     .find(s => s.id === next.sessionId);
@@ -96,10 +123,10 @@ export function TodayView() {
           <div className="eyebrow">
             <span className="tiny-cross">+</span> YOUR DAILY COORDINATES
           </div>
-          <h1>
-            {greeting}, {model.profile.owner}
-            <span className="greeting-dot">.</span>
-          </h1>
+          <KineticGreeting
+            text={`${greeting}, ${model.profile.owner}`}
+            dot
+          />
           <p>A clear mind. A small step. A little closer.</p>
         </div>
         <div className="date-label">
@@ -114,15 +141,19 @@ export function TodayView() {
           </span>
         </div>
       </div>
-      <section className="cosmic-hero" aria-labelledby="hero-title">
-        <Image
-          src="/assets/meridian-observatory.png"
-          alt="A luminous violet accretion disk orbiting a black hole in a quiet field of stars"
-          fill
-          priority
-          sizes="(max-width: 800px) 100vw, 80vw"
-          className="cosmic-image"
-        />
+      <Reveal
+        as="section"
+        className="gargantua-hero"
+        labelledBy="hero-title"
+        delay={0.05}
+        y={22}
+      >
+        <div className="gargantua-stage" aria-hidden="true">
+          <MeridianHeroCanvas
+            phaseProgress={activeProgress?.percent ?? 0}
+            activePhaseNumber={active.identity.number + 1}
+          />
+        </div>
         <div className="hero-shade" />
         <div className="cosmic-copy">
           <span className="hero-tag">
@@ -138,11 +169,13 @@ export function TodayView() {
             <br />
             Let’s make this one count.
           </p>
-          <Link className="button-primary hero-button" href={primaryHref}>
-            <Play size={14} fill="currentColor" />
-            {session ? "Continue learning" : "Open phase checkpoint"}
-            <ArrowRight size={16} />
-          </Link>
+          <Magnetic className="hero-button-magnetic">
+            <Link className="button-primary hero-button" href={primaryHref}>
+              <Play size={14} fill="currentColor" />
+              {session ? "Continue learning" : "Open phase checkpoint"}
+              <ArrowRight size={16} />
+            </Link>
+          </Magnetic>
         </div>
         <div className="hero-coordinate">
           <Crosshair size={14} />
@@ -154,8 +187,13 @@ export function TodayView() {
         </div>
         <span className="hero-corner top-left" />
         <span className="hero-corner bottom-right" />
-      </section>
-      <section className="stat-strip" aria-label="Your study progress">
+      </Reveal>
+      <Reveal
+        as="section"
+        className="stat-strip"
+        label="Your study progress"
+        delay={0.12}
+      >
         <div>
           <span className="stat-icon violet">
             <Clock3 size={19} />
@@ -163,7 +201,7 @@ export function TodayView() {
           <div>
             <span className="stat-label">Focus today</span>
             <strong>
-              {minutes}
+              <CountUp value={minutes} />
               <small> min</small>
             </strong>
             <span className="stat-caption">
@@ -178,7 +216,7 @@ export function TodayView() {
           <div>
             <span className="stat-label">Sessions completed</span>
             <strong>
-              {completed}
+              <CountUp value={completed} />
               <small> / {total}</small>
             </strong>
             <span className="stat-caption">Building a real foundation</span>
@@ -191,7 +229,7 @@ export function TodayView() {
           <div>
             <span className="stat-label">Current streak</span>
             <strong>
-              {getStreak(state)}
+              <CountUp value={getStreak(state)} />
               <small> days</small>
             </strong>
             <span className="stat-caption">Keep showing up for yourself</span>
@@ -204,16 +242,16 @@ export function TodayView() {
           <div>
             <span className="stat-label">Journey progress</span>
             <strong>
-              {overall.percent}
+              <CountUp value={overall.percent} />
               <small>%</small>
             </strong>
             <span className="stat-caption">Four phases. One direction.</span>
           </div>
         </div>
-      </section>
+      </Reveal>
       <div className="dashboard-columns">
         <div className="dashboard-primary">
-          <section className="obs-panel next-session">
+          <Reveal as="section" className="obs-panel next-session" delay={0.16}>
             <div className="panel-heading">
               <h2>
                 <span className="signal-dot" /> Up next
@@ -278,8 +316,13 @@ export function TodayView() {
                 <ArrowRight size={16} />
               </Link>
             </div>
-          </section>
-          <section className="obs-panel plan-card" id="daily-plan-heading">
+          </Reveal>
+          <Reveal
+            as="section"
+            className="obs-panel plan-card"
+            id="daily-plan-heading"
+            delay={0.22}
+          >
             <div className="panel-heading">
               <h2>
                 <Compass size={18} /> Today’s flight plan
@@ -411,8 +454,8 @@ export function TodayView() {
                 Plan accepted<span>Adjust your pace in Settings</span>
               </div>
             )}
-          </section>
-          <section className="obs-panel mini-map">
+          </Reveal>
+          <Reveal as="section" className="obs-panel mini-map" delay={0.28}>
             <div className="panel-heading">
               <h2>
                 <Orbit size={18} /> Your learning trajectory
@@ -444,10 +487,10 @@ export function TodayView() {
                 </Link>
               ))}
             </div>
-          </section>
+          </Reveal>
         </div>
         <aside className="dashboard-secondary">
-          <section className="obs-panel focus-invite">
+          <Reveal as="section" className="obs-panel focus-invite" delay={0.2}>
             <div className="panel-heading">
               <h2>
                 <Timer size={18} /> A little space to focus
@@ -470,8 +513,8 @@ export function TodayView() {
               Enter focus room
               <ArrowRight size={16} />
             </Link>
-          </section>
-          <section className="obs-panel week-card">
+          </Reveal>
+          <Reveal as="section" className="obs-panel week-card" delay={0.26}>
             <div className="panel-heading">
               <h2>This week, so far</h2>
               <Link
@@ -514,7 +557,7 @@ export function TodayView() {
                 ? "Your first session starts the story."
                 : "Every focused minute moves you forward."}
             </p>
-          </section>
+          </Reveal>
           <Link className="obs-panel recall-nudge" href="/recall">
             <span className="stat-icon violet">
               <Brain size={20} />
@@ -533,7 +576,7 @@ export function TodayView() {
             </span>
             <ChevronRight size={16} />
           </Link>
-          <section className="obs-panel quick-note">
+          <Reveal as="section" className="obs-panel quick-note" delay={0.34}>
             <div className="panel-heading">
               <h2>
                 <BookOpen size={17} /> A thought worth keeping
@@ -564,7 +607,7 @@ export function TodayView() {
                 )}
               </button>
             </div>
-          </section>
+          </Reveal>
         </aside>
       </div>
       <div className="dashboard-bottom-note">
@@ -580,6 +623,61 @@ export function TodayView() {
     </div>
   );
 }
+/**
+ * KineticGreeting — the cinematic headline: each word rises, de-blurs and
+ * settles with a soft stagger. The plain sentence is exposed once via
+ * aria-label; the animated word stream is hidden from assistive technology.
+ */
+function KineticGreeting({ text, dot = false }: { text: string; dot?: boolean }) {
+  const reduce = useReducedMotion();
+  if (reduce) {
+    return (
+      <h1>
+        {text}
+        {dot && <span className="greeting-dot">.</span>}
+      </h1>
+    );
+  }
+  const words = text.split(" ");
+  return (
+    <h1 aria-label={dot ? `${text}.` : text}>
+      {words.map((word, index) => {
+        return (
+          <motion.span
+            key={`${word}-${index}`}
+            aria-hidden="true"
+            className="kinetic-word"
+            initial={{ opacity: 0, y: 26, filter: "blur(10px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            transition={{
+              duration: 0.8,
+              delay: 0.08 + index * 0.09,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+          >
+            {word}
+          </motion.span>
+        );
+      })}
+      {dot && (
+        <motion.span
+          aria-hidden="true"
+          className="greeting-dot"
+          initial={{ opacity: 0, scale: 0.4 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{
+            duration: 0.45,
+            delay: 0.08 + words.length * 0.09,
+            ease: [0.22, 1, 0.36, 1],
+          }}
+        >
+          .
+        </motion.span>
+      )}
+    </h1>
+  );
+}
+
 function CalendarIcon() {
   return (
     <svg

@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import {
@@ -24,6 +25,29 @@ import {
   isPhaseCleared,
 } from "@/state/selectors";
 import { useMeridianStore } from "@/state/store";
+import { Reveal } from "./motion/reveal";
+
+/**
+ * The live star map is client-only (canvas2D). While it loads — or if the
+ * bundle ever fails — the caption, station buttons, and legend below remain
+ * fully usable, so the map never blocks the journey.
+ */
+const ConstellationCanvas = dynamic(
+  () =>
+    import("@/components/webgl/constellation-canvas").then(
+      mod => mod.ConstellationCanvas
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        className="constellation-canvas-container constellation-loading"
+        aria-hidden="true"
+      />
+    ),
+  }
+);
+
 const symbols = [Code2, Orbit, Sparkles, ShieldCheck];
 export function PathView() {
   return (
@@ -69,6 +93,21 @@ function LearningMap() {
         aria-label="Four phase learning map"
       >
         <div className="map-grid" />
+        <ConstellationCanvas
+          phases={model.phases.map(p => ({
+            id: p.id,
+            name: p.identity.northstarName,
+            number: p.identity.number + 1,
+            percent: getPhaseProgress(model, p, state).percent,
+            active: active.id === p.id,
+            cleared: isPhaseCleared(p, state),
+          }))}
+          selectedId={selected}
+          onSelect={id => {
+            setSelected(id);
+            setQuery("");
+          }}
+        />
         <div className="map-caption">
           <span>
             <span className="signal-dot" /> YOUR TRAJECTORY
@@ -126,7 +165,7 @@ function LearningMap() {
         </div>
       </section>
       <div className="map-detail-grid">
-        <section className="obs-panel map-session-panel">
+        <Reveal as="section" className="obs-panel map-session-panel" delay={0.08}>
           <div className="map-phase-header">
             <div className="eyebrow">PHASE 0{phase.identity.number + 1}</div>
             <h2>{phase.identity.northstarName}</h2>
@@ -204,9 +243,9 @@ function LearningMap() {
               </div>
             )}
           </div>
-        </section>
+        </Reveal>
         <aside>
-          <section className="obs-panel phase-brief">
+          <Reveal as="section" className="obs-panel phase-brief" delay={0.14}>
             <span className="mini-icon">
               <Orbit size={24} />
             </span>
@@ -227,8 +266,8 @@ function LearningMap() {
               View checkpoint
               <ArrowRight size={16} />
             </Link>
-          </section>
-          <section className="obs-panel phase-resource">
+          </Reveal>
+          <Reveal as="section" className="obs-panel phase-resource" delay={0.2}>
             <div className="eyebrow">YOUR ANCHOR RESOURCE</div>
             <h3>{phase.identity.primary}</h3>
             <p>
@@ -241,7 +280,7 @@ function LearningMap() {
               Open phase resources
               <ArrowUpRight size={16} />
             </Link>
-          </section>
+          </Reveal>
           <Link href="/dsa" className="obs-panel side-track">
             <Code2 size={22} />
             <div>

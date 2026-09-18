@@ -25,6 +25,13 @@ import { ScrollProgress } from "./motion/scroll-progress";
 import { elapsedSeconds } from "@/lib/focus-time";
 import { saveCloud } from "@/state/cloud";
 
+/**
+ * Window event fired whenever a guided session is completed. The hero canvas
+ * listens for this and erupts in a starburst. Kept as a plain string so any
+ * view can dispatch it without importing the canvas bundle.
+ */
+export const SESSION_COMPLETE_EVENT = "meridian:session-complete";
+
 /** Share a session through the Web Share API with a clipboard fallback. */
 async function shareSession(title: string, text: string): Promise<string> {
   const payload = {
@@ -317,6 +324,12 @@ export function SessionRunner({ sessionId }: { sessionId: string }) {
         capability: phase.identity.northstarName,
         proofStatus: "verified",
       }
+    );
+    // Completion celebration: the hero canvas listens and starbursts.
+    window.dispatchEvent(
+      new CustomEvent(SESSION_COMPLETE_EVENT, {
+        detail: { sessionId: activeSession.id, phaseId: phase.id },
+      })
     );
     setProofMode(false);
   }
